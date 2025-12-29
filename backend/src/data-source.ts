@@ -3,7 +3,9 @@ import { DataSource } from "typeorm";
 import * as path from "node:path";
 import * as dotenv from "dotenv";
 import { User } from "./entities/User";
+import { Institution } from "./entities/Institution";
 import { VolunteerOpportunity } from "./entities/VolunteerOpportunity";
+import { Application } from "./entities/Application";
 
 dotenv.config();
 

@@ -44,7 +44,7 @@ export class VolunteerOpportunity extends BaseColumns {
   @Column({ type: "boolean", default: true })
   isActive!: boolean;
 
-  @OneToMany(() => Application, (a) => a.opportunity)
+  @OneToMany(() => Application, (a: Application) => a.opportunity)
   applications?: Application[];
 }
 

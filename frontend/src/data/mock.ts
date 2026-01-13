@@ -104,3 +104,21 @@ export function getApplicationsWithDetailsByOpportunity(opportunityId: string) {
       student: students.find((s) => s.id === a.studentId)!,
     }));
 }
+
+// -------------------------------
+// Helpers da INSTITUIÇÃO
+// -------------------------------
+
+export function getOpportunitiesByInstitution(institutionId: string) {
+  return opportunities.filter((opp) => opp.institutionId === institutionId);
+}
+
+export function getApplicationsByInstitution(institutionId: string) {
+  const institutionOpportunities = opportunities
+    .filter((opp) => opp.institutionId === institutionId)
+    .map((opp) => opp.id);
+
+  return applications.filter((app) =>
+    institutionOpportunities.includes(app.opportunityId)
+  );
+}

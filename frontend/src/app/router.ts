@@ -133,9 +133,14 @@ export const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore();
   if (!auth.user) auth.loadFromStorage();
+
+  // Se tem token mas não tem user, verifica com a API
+  if (auth.token && !auth.user) {
+    await auth.checkAuth();
+  }
 
   const requiresAuth = !!to.meta.requiresAuth;
 

@@ -1,91 +1,124 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { applications, opportunities } from "../../data/mock";
-import { useAuthStore } from "../../stores/auth.store";
+import { onMounted, ref } from "vue";
+import { useOpportunityStore } from "../../stores/opportunity.store";
+import { useInstitutionStore } from "../../stores/institution.store";
 
-const auth = useAuthStore();
+const opportunityStore = useOpportunityStore();
+const institutionStore = useInstitutionStore();
 
-// (mock) se seu auth não tem institutionId real, usa um fixo por enquanto:
-const institutionId = computed(
-  () => (auth.user as any)?.institutionId ?? "inst1"
-);
+const opportunities = ref<any[]>([]);
 
-// Lista só as vagas da instituição logada
-const myOpportunities = computed(() =>
-  opportunities.filter((o) => o.institutionId === institutionId.value)
-);
+onMounted(async () => {
+  try {
+    // carregar dados da instituição para obter o id
+    const institution = await institutionStore.getMe();
+    
+    if (institution) {
+      // carregar oportunidades da instituição usando o institutionId
+      const result = await opportunityStore.list({ 
+        institutionId: institution.id,
+        limit: 100 
+      });
+      opportunities.value = result.data;
+    }
+  } catch (err) {
+    console.error("Erro ao carregar oportunidades:", err);
+  }
+});
 
-// Conta candidatos por vaga
-function candidatesCount(opportunityId: string) {
-  return applications.filter((a) => a.opportunityId === opportunityId).length;
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("pt-BR");
+}
+
+function statusLabel(isActive: boolean) {
+  return isActive ? "Ativa" : "Inativa";
 }
 </script>
 
 <template>
-  <div style="max-width: 980px">
-    <header
-      style="
-        margin-bottom: 16px;
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-        align-items: center;
-      "
-    >
-      <div>
-        <h1 style="font-size: 28px; font-weight: 900; margin: 0 0 6px">
-          Minhas Vagas
-        </h1>
-        <p style="opacity: 0.75; margin: 0">
-          Gerencie suas oportunidades e acompanhe candidatos.
-        </p>
+  <div style="max-width: 1100px">
+    <header style="margin-bottom: 20px">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px">
+        <div>
+          <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 6px">
+            Minhas Vagas
+          </h1>
+          <p style="opacity: 0.75; margin: 0">
+            Gerencie suas oportunidades de voluntariado.
+          </p>
+        </div>
+        <RouterLink
+          to="/app/institution/vagas/nova"
+          style="
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #111827;
+            text-decoration: none;
+            font-weight: 700;
+            background: #111827;
+            color: #fff;
+          "
+        >
+          ➕ Criar nova vaga
+        </RouterLink>
       </div>
-
-      <RouterLink
-        to="/app/institution/vagas/nova"
-        style="
-          display: inline-block;
-          padding: 10px 12px;
-          border: 1px solid #111827;
-          border-radius: 10px;
-          text-decoration: none;
-          background: #111827;
-          color: #fff;
-        "
-      >
-        + Criar nova vaga
-      </RouterLink>
     </header>
 
+    <!-- loading -->
+    <div v-if="opportunityStore.loading" style="text-align: center; padding: 40px">
+      <p style="opacity: 0.75">Carregando vagas...</p>
+    </div>
+
+    <!-- erro -->
     <div
-      v-if="myOpportunities.length === 0"
+      v-else-if="opportunityStore.error"
       style="
-        padding: 18px;
-        border: 1px solid #e5e7eb;
+        padding: 16px;
+        background: #fee;
+        border: 1px solid #fcc;
+        border-radius: 10px;
+        color: #c33;
+        margin-bottom: 20px;
+      "
+    >
+      {{ opportunityStore.error }}
+    </div>
+
+    <!-- lista vazia -->
+    <div
+      v-else-if="opportunities.length === 0"
+      style="
+        padding: 40px;
+        border: 1px dashed #e5e7eb;
         border-radius: 12px;
+        text-align: center;
         background: #fff;
       "
     >
-      <strong>Você ainda não publicou nenhuma vaga.</strong>
-      <p style="opacity: 0.75; margin-top: 6px">
-        Clique em “Criar nova vaga” para começar.
+      <p style="font-size: 18px; font-weight: 700; margin: 0 0 8px">
+        Você ainda não criou nenhuma vaga
+      </p>
+      <p style="opacity: 0.75; margin: 0 0 16px">
+        Crie sua primeira oportunidade de voluntariado.
       </p>
       <RouterLink
         to="/app/institution/vagas/nova"
         style="
           display: inline-block;
-          margin-top: 10px;
-          padding: 10px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid #111827;
           text-decoration: none;
+          font-weight: 700;
+          background: #111827;
+          color: #fff;
         "
       >
-        Criar nova vaga
+        Criar primeira vaga
       </RouterLink>
     </div>
 
+    <!-- lista de vagas -->
     <div
       v-else
       style="
@@ -106,7 +139,7 @@ function candidatesCount(opportunityId: string) {
                 opacity: 0.75;
               "
             >
-              Vaga
+              Título
             </th>
             <th
               style="
@@ -126,7 +159,7 @@ function candidatesCount(opportunityId: string) {
                 opacity: 0.75;
               "
             >
-              Carga
+              Cidade
             </th>
             <th
               style="
@@ -136,7 +169,17 @@ function candidatesCount(opportunityId: string) {
                 opacity: 0.75;
               "
             >
-              Candidatos
+              Status
+            </th>
+            <th
+              style="
+                text-align: left;
+                padding: 12px;
+                font-size: 13px;
+                opacity: 0.75;
+              "
+            >
+              Criada em
             </th>
             <th
               style="
@@ -150,45 +193,49 @@ function candidatesCount(opportunityId: string) {
             </th>
           </tr>
         </thead>
-
         <tbody>
           <tr
-            v-for="opp in myOpportunities"
+            v-for="opp in opportunities"
             :key="opp.id"
             style="border-top: 1px solid #e5e7eb"
           >
             <td style="padding: 12px">
-              <div style="font-weight: 800">{{ opp.title }}</div>
+              <div style="font-weight: 700">{{ opp.title }}</div>
               <div style="font-size: 13px; opacity: 0.7">
-                {{ opp.city }} • {{ opp.institutionName }}
+                {{ opp.workloadHours }}h
               </div>
             </td>
-
-            <td style="padding: 12px">{{ opp.category }}</td>
-
-            <td style="padding: 12px">{{ opp.workloadHours }}h</td>
-
+            <td style="padding: 12px">
+              {{ opp.category || "-" }}
+            </td>
+            <td style="padding: 12px">
+              {{ opp.city || "-" }}
+            </td>
             <td style="padding: 12px">
               <span
-                style="
-                  padding: 4px 10px;
-                  border-radius: 999px;
-                  background: #f3f4f6;
-                  font-size: 13px;
-                "
+                :style="{
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  background: opp.isActive ? '#dcfce7' : '#f3f4f6',
+                  color: opp.isActive ? '#166534' : '#6b7280',
+                  fontSize: '13px',
+                }"
               >
-                {{ candidatesCount(opp.id) }}
+                {{ statusLabel(opp.isActive) }}
               </span>
             </td>
-
+            <td style="padding: 12px; font-size: 13px; opacity: 0.7">
+              {{ formatDate(opp.createdAt) }}
+            </td>
             <td style="padding: 12px">
               <RouterLink
                 :to="`/app/institution/vagas/${String(opp.id)}`"
                 style="
-                  padding: 8px 10px;
+                  padding: 8px 12px;
                   border: 1px solid #e5e7eb;
                   border-radius: 10px;
                   text-decoration: none;
+                  font-size: 13px;
                 "
               >
                 Gerenciar

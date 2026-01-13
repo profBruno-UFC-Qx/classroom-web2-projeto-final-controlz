@@ -4,7 +4,7 @@ export type ApplicationStatus =
   | "recusada"
   | "concluida";
 
-export type Role = "student" | "institution" | "admin";
+export type Role = "admin" | "instituicao" | "aluno";
 
 export type Opportunity = {
   id: string;

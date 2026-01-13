@@ -1,33 +1,100 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { getApplicationsWithDetailsByStudent } from "../../data/mock";
-import { useAuthStore } from "../../stores/auth.store";
+import { computed, onMounted, ref, watch } from "vue";
+import { useApplicationStore, type Application } from "../../stores/application.store";
+import { useOpportunityStore } from "../../stores/opportunity.store";
 
-const auth = useAuthStore();
-
-// ✅ força string (corrige o erro ts-plugin)
-const studentId = computed(() => String(auth.user?.id ?? "stu1"));
+const applicationStore = useApplicationStore();
+const opportunityStore = useOpportunityStore();
 
 const statusFilter = ref<
-  "todos" | "pendente" | "aceita" | "recusada" | "concluida"
+  "todos" | "pending" | "accepted" | "rejected" | "completed"
 >("todos");
 
-const items = computed(() =>
-  getApplicationsWithDetailsByStudent(studentId.value)
-);
+// Mapear status do backend para exibição
+const statusMap: Record<string, string> = {
+  pending: "Pendente",
+  accepted: "Aceita",
+  rejected: "Recusada",
+  completed: "Concluída",
+};
+
+// Aplicações com dados da oportunidade carregados
+const applicationsWithDetails = ref<
+  Array<
+    Application & {
+      opportunityData?: {
+        title: string;
+        city?: string | null;
+        category?: string | null;
+        workloadHours: number;
+        institutionName?: string;
+      };
+    }
+  >
+>([]);
+
+async function loadApplications() {
+  try {
+    const query: any = { limit: 50 };
+    if (statusFilter.value !== "todos") {
+      query.status = statusFilter.value;
+    }
+
+    const result = await applicationStore.listMyApplications(query);
+
+    // Buscar dados das oportunidades
+    const applicationsWithOpps = await Promise.all(
+      result.data.map(async (app) => {
+        try {
+          await opportunityStore.getById(app.opportunityId);
+          const opp = opportunityStore.currentOpportunity;
+          return {
+            ...app,
+            opportunityData: opp
+              ? {
+                  title: opp.title,
+                  city: opp.city,
+                  category: opp.category,
+                  workloadHours: opp.workloadHours,
+                  institutionName: "Instituição", // TODO: buscar nome da instituição se necessário
+                }
+              : undefined,
+          };
+        } catch (err) {
+          return {
+            ...app,
+            opportunityData: undefined,
+          };
+        }
+      })
+    );
+
+    applicationsWithDetails.value = applicationsWithOpps;
+  } catch (err) {
+    console.error("Erro ao carregar candidaturas:", err);
+  }
+}
 
 const filtered = computed(() => {
-  if (statusFilter.value === "todos") return items.value;
-  return items.value.filter((i) => i.status === statusFilter.value);
+  if (statusFilter.value === "todos") return applicationsWithDetails.value;
+  return applicationsWithDetails.value.filter(
+    (a) => a.status === statusFilter.value
+  );
 });
 
-function statusLabel(s: string) {
-  if (s === "pendente") return "Pendente";
-  if (s === "aceita") return "Aceita";
-  if (s === "recusada") return "Recusada";
-  if (s === "concluida") return "Concluída";
-  return s;
+function statusLabel(status: string) {
+  return statusMap[status] || status;
 }
+
+onMounted(() => {
+  loadApplications();
+});
+
+// Recarrega quando o filtro muda
+const filterWatcher = computed(() => statusFilter.value);
+watch(filterWatcher, () => {
+  loadApplications();
+});
 </script>
 
 <template>
@@ -37,9 +104,31 @@ function statusLabel(s: string) {
       <p style="opacity: 0.75">Acompanhe o status das suas candidaturas.</p>
     </header>
 
+    <!-- Loading -->
+    <div v-if="applicationStore.loading" style="text-align: center; padding: 40px">
+      <p style="opacity: 0.75">Carregando candidaturas...</p>
+    </div>
+
+    <!-- Erro -->
     <div
-      style="display: flex; gap: 12px; align-items: center; margin-bottom: 14px"
+      v-else-if="applicationStore.error"
+      style="
+        padding: 16px;
+        background: #fee;
+        border: 1px solid #fcc;
+        border-radius: 10px;
+        color: #c33;
+        margin-bottom: 16px;
+      "
     >
+      {{ applicationStore.error }}
+    </div>
+
+    <!-- Conteúdo -->
+    <template v-else>
+      <div
+        style="display: flex; gap: 12px; align-items: center; margin-bottom: 14px"
+      >
       <label style="font-size: 14px; opacity: 0.8">Filtrar por status:</label>
       <select
         v-model="statusFilter"
@@ -50,10 +139,10 @@ function statusLabel(s: string) {
         "
       >
         <option value="todos">Todos</option>
-        <option value="pendente">Pendente</option>
-        <option value="aceita">Aceita</option>
-        <option value="recusada">Recusada</option>
-        <option value="concluida">Concluída</option>
+        <option value="pending">Pendente</option>
+        <option value="accepted">Aceita</option>
+        <option value="rejected">Recusada</option>
+        <option value="completed">Concluída</option>
       </select>
     </div>
 
@@ -71,7 +160,7 @@ function statusLabel(s: string) {
         Tente mudar o filtro ou explore novas oportunidades.
       </p>
       <RouterLink
-        to="/oportunidades"
+        to="/app/student/oportunidades"
         style="
           display: inline-block;
           margin-top: 10px;
@@ -85,15 +174,15 @@ function statusLabel(s: string) {
       </RouterLink>
     </div>
 
-    <div
-      v-else
-      style="
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        overflow: hidden;
-        background: #fff;
-      "
-    >
+      <div
+        v-else
+        style="
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #fff;
+        "
+      >
       <table style="width: 100%; border-collapse: collapse">
         <thead style="background: #f9fafb">
           <tr>
@@ -157,13 +246,21 @@ function statusLabel(s: string) {
             style="border-top: 1px solid #e5e7eb"
           >
             <td style="padding: 12px">
-              <div style="font-weight: 700">{{ row.opportunity.title }}</div>
-              <div style="font-size: 13px; opacity: 0.7">
-                {{ row.opportunity.city }} • {{ row.createdAt }}
+              <div v-if="row.opportunityData" style="font-weight: 700">
+                {{ row.opportunityData.title }}
+              </div>
+              <div v-else style="font-weight: 700; opacity: 0.5">
+                Carregando...
+              </div>
+              <div v-if="row.opportunityData" style="font-size: 13px; opacity: 0.7">
+                {{ row.opportunityData.city || "Cidade não informada" }} •
+                {{ new Date(row.createdAt).toLocaleDateString("pt-BR") }}
               </div>
             </td>
 
-            <td style="padding: 12px">{{ row.opportunity.institutionName }}</td>
+            <td style="padding: 12px">
+              {{ row.opportunityData?.institutionName || "-" }}
+            </td>
 
             <td style="padding: 12px">
               <span
@@ -178,7 +275,9 @@ function statusLabel(s: string) {
               </span>
             </td>
 
-            <td style="padding: 12px">{{ row.opportunity.workloadHours }}h</td>
+            <td style="padding: 12px">
+              {{ row.opportunityData?.workloadHours || "-" }}h
+            </td>
 
             <td style="padding: 12px">
               <RouterLink
@@ -196,6 +295,7 @@ function statusLabel(s: string) {
           </tr>
         </tbody>
       </table>
-    </div>
+      </div>
+    </template>
   </div>
 </template>

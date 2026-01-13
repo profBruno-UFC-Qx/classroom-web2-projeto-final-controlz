@@ -57,7 +57,7 @@ const routes: RouteRecordRaw[] = [
       // STUDENT
       {
         path: "student",
-        meta: { role: "student" },
+        meta: { role: "aluno" },
         children: [
           {
             path: "dashboard",
@@ -75,6 +75,16 @@ const routes: RouteRecordRaw[] = [
             component: StudentApplicationDetail,
           },
           {
+            path: "oportunidades",
+            name: "student_opportunities",
+            component: OpportunitiesList,
+          },
+          {
+            path: "oportunidades/:id",
+            name: "student_opportunity_details",
+            component: OpportunityDetails,
+          },
+          {
             path: "perfil",
             name: "student_profile",
             component: StudentProfile,
@@ -85,7 +95,7 @@ const routes: RouteRecordRaw[] = [
       // INSTITUTION
       {
         path: "institution",
-        meta: { role: "institution" },
+        meta: { role: "instituicao" },
         children: [
           {
             path: "dashboard",
@@ -133,9 +143,14 @@ export const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore();
   if (!auth.user) auth.loadFromStorage();
+
+  // se tem token mas não tem user, verifica com a API
+  if (auth.token && !auth.user) {
+    await auth.checkAuth();
+  }
 
   const requiresAuth = !!to.meta.requiresAuth;
 
@@ -148,8 +163,8 @@ router.beforeEach((to) => {
   }
 
   if (requiresAuth && requiredRole && auth.role !== requiredRole) {
-    if (auth.role === "student") return { name: "student_dashboard" };
-    if (auth.role === "institution") return { name: "institution_dashboard" };
+    if (auth.role === "aluno") return { name: "student_dashboard" };
+    if (auth.role === "instituicao") return { name: "institution_dashboard" };
     if (auth.role === "admin") return { name: "admin_dashboard" };
     return { name: "home" };
   }

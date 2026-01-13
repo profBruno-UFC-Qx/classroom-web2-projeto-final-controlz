@@ -16,7 +16,8 @@ export function userRoutes() {
   // admin
   r.get("/", authRequired, requireRole(UserRole.ADMIN), asyncHandler(c.adminList));
   r.post("/", authRequired, requireRole(UserRole.ADMIN), asyncHandler(c.adminCreate));
-  r.get("/:id", authRequired, requireRole(UserRole.ADMIN), asyncHandler(c.adminGet));
+  // admin e instituição podem ver perfil de usuário (instituição precisa para ver alunos que se candidataram)
+  r.get("/:id", authRequired, requireRole(UserRole.ADMIN, UserRole.INSTITUTION), asyncHandler(c.adminGet));
   r.put("/:id", authRequired, requireRole(UserRole.ADMIN), asyncHandler(c.adminUpdate));
   r.delete("/:id", authRequired, requireRole(UserRole.ADMIN), asyncHandler(c.adminDelete));
 

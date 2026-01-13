@@ -57,7 +57,7 @@ const routes: RouteRecordRaw[] = [
       // STUDENT
       {
         path: "student",
-        meta: { role: "student" },
+        meta: { role: "aluno" },
         children: [
           {
             path: "dashboard",
@@ -85,7 +85,7 @@ const routes: RouteRecordRaw[] = [
       // INSTITUTION
       {
         path: "institution",
-        meta: { role: "institution" },
+        meta: { role: "instituicao" },
         children: [
           {
             path: "dashboard",
@@ -148,8 +148,8 @@ router.beforeEach((to) => {
   }
 
   if (requiresAuth && requiredRole && auth.role !== requiredRole) {
-    if (auth.role === "student") return { name: "student_dashboard" };
-    if (auth.role === "institution") return { name: "institution_dashboard" };
+    if (auth.role === "aluno") return { name: "student_dashboard" };
+    if (auth.role === "instituicao") return { name: "institution_dashboard" };
     if (auth.role === "admin") return { name: "admin_dashboard" };
     return { name: "home" };
   }

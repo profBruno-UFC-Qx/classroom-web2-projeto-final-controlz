@@ -22,6 +22,12 @@ const categories = [
   "Direitos",
 ];
 
+// TODO: integrar com API real
+// - substituir alert mock por useOpportunityStore() ou chamada direta
+// - integrar com POST /opportunities
+// - validação de campos obrigatórios
+// - feedback de sucesso/erro
+// - redirecionamento após criar
 function submit() {
   // Mock: só demonstra o fluxo
   alert(

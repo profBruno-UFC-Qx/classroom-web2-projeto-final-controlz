@@ -1,4 +1,10 @@
 <script setup lang="ts">
+// TODO: integrar com API real
+// - substituir dados mock por useApplicationStore() e useOpportunityStore()
+// - carregar dados reais da candidatura e oportunidade
+// - ações mock (download termo, upload, certificado) podem ficar mock por enquanto
+// - loading states
+// - tratamento de erros
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {

@@ -1,4 +1,12 @@
 <script setup lang="ts">
+// TODO: integrar com API real
+// - substituir getOpportunitiesByInstitution() por useOpportunityStore().list({ institutionId })
+// - substituir getApplicationsByInstitution() por useApplicationStore().listInstitutionApplications()
+// - integrar com GET /institutions/me para dados da instituição
+// - integrar com GET /opportunities?institutionId=... para vagas
+// - integrar com GET /applications/institution para candidaturas
+// - atualizar contadores reais
+// - loading states
 import { computed } from "vue";
 import {
   getApplicationsByInstitution,

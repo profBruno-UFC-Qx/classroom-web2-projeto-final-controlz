@@ -1,4 +1,11 @@
 <script setup lang="ts">
+    // TODO: integrar com API real
+    // - substituir dados mock por useOpportunityStore().list()
+    // - integrar com GET /opportunities?page=&limit=&category=&city=&institutionId=&isActive=
+    // - implementar paginação
+    // - implementar filtros (category, city, etc)
+    // - loading states
+    // - tratamento de erros
     import { computed, ref } from "vue";
     import OpportunityCard, { type Opportunity } from "../../components/opportunities/OpportunityCard.vue";
 

@@ -1,4 +1,10 @@
 <script setup lang="ts">
+// TODO: integrar com API real
+// - substituir getApplicationsWithDetailsByStudent() por useApplicationStore().listMyApplications()
+// - integrar com GET /applications/me?page=&limit=&status=&opportunityId=
+// - implementar paginação
+// - loading states
+// - atualizar dados após mudanças
 import { computed, ref } from "vue";
 import { getApplicationsWithDetailsByStudent } from "../../data/mock";
 import { useAuthStore } from "../../stores/auth.store";

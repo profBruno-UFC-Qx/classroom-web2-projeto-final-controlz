@@ -44,7 +44,7 @@ function linkClass(pathStartsWith: string) {
 
       <nav style="display: flex; flex-direction: column; gap: 8px">
         <!-- STUDENT -->
-        <template v-if="auth.role === 'student'">
+        <template v-if="auth.role === 'aluno'">
           <RouterLink
             :class="linkClass('/app/student/dashboard')"
             to="/app/student/dashboard"
@@ -66,7 +66,7 @@ function linkClass(pathStartsWith: string) {
         </template>
 
         <!-- INSTITUTION -->
-        <template v-else-if="auth.role === 'institution'">
+        <template v-else-if="auth.role === 'instituicao'">
           <RouterLink
             :class="linkClass('/app/institution/dashboard')"
             to="/app/institution/dashboard"

@@ -1,4 +1,11 @@
 <script setup lang="ts">
+// TODO: integrar com API real
+// - substituir dados mock por useOpportunityStore().getById(id)
+// - integrar com GET /opportunities (filtrar por ID, já que não há endpoint específico)
+// - integrar botão "Candidatar-se" com useApplicationStore().apply(opportunityId)
+// - verificar se já está candidatado antes de mostrar botão
+// - feedback de sucesso/erro após candidatura
+// - loading states
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "../../stores/auth.store";
@@ -70,7 +77,7 @@ function apply() {
         Fazer login para se candidatar
     </RouterLink>
 
-    <button v-else-if="role === 'student'" type="button" @click="apply">
+    <button v-else-if="role === 'aluno'" type="button" @click="apply">
         Candidatar-se
     </button>
 

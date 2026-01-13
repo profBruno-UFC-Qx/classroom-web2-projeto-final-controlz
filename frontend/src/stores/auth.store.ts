@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-export type UserRole = "student" | "institution" | "admin";
+export type UserRole = "admin" | "instituicao" | "aluno";
 
 export type AuthUser = {
 id: string | number;
@@ -43,6 +43,12 @@ actions: {
     localStorage.removeItem("cv_user");
     },
 
+    // TODO: remover loginMock e implementar autenticação real
+    // - criar action login(email, password) que chama POST /auth/login
+    // - criar action register(name, email, password, role) que chama POST /auth/register
+    // - criar action logout() que chama POST /auth/logout (se necessário)
+    // - criar action checkAuth() que chama GET /auth/me para verificar token
+    // - atualizar setAuth para usar dados reais da API
     // Mock
     loginMock(role: UserRole) {
     this.setAuth("mock-token", {

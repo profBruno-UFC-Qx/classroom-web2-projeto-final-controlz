@@ -75,6 +75,16 @@ const routes: RouteRecordRaw[] = [
             component: StudentApplicationDetail,
           },
           {
+            path: "oportunidades",
+            name: "student_opportunities",
+            component: OpportunitiesList,
+          },
+          {
+            path: "oportunidades/:id",
+            name: "student_opportunity_details",
+            component: OpportunityDetails,
+          },
+          {
             path: "perfil",
             name: "student_profile",
             component: StudentProfile,
@@ -137,7 +147,7 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore();
   if (!auth.user) auth.loadFromStorage();
 
-  // Se tem token mas não tem user, verifica com a API
+  // se tem token mas não tem user, verifica com a API
   if (auth.token && !auth.user) {
     await auth.checkAuth();
   }

@@ -58,6 +58,12 @@ function linkClass(pathStartsWith: string) {
             Minhas candidaturas
           </RouterLink>
           <RouterLink
+            :class="linkClass('/app/student/oportunidades')"
+            to="/app/student/oportunidades"
+          >
+            Oportunidades
+          </RouterLink>
+          <RouterLink
             :class="linkClass('/app/student/perfil')"
             to="/app/student/perfil"
           >

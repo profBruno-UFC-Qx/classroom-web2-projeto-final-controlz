@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "../../stores/auth.store";
+import { useOpportunityStore } from "../../stores/opportunity.store";
+import { useInstitutionStore } from "../../stores/institution.store";
 
 const router = useRouter();
-const auth = useAuthStore();
+const opportunityStore = useOpportunityStore();
+const institutionStore = useInstitutionStore();
 
 const form = reactive({
   title: "",
@@ -14,6 +16,10 @@ const form = reactive({
   description: "",
 });
 
+const error = ref("");
+const success = ref(false);
+const checkingProfile = ref(true);
+
 const categories = [
   "Educação",
   "Meio Ambiente",
@@ -22,24 +28,60 @@ const categories = [
   "Direitos",
 ];
 
-// TODO: integrar com API real
-// - substituir alert mock por useOpportunityStore() ou chamada direta
-// - integrar com POST /opportunities
-// - validação de campos obrigatórios
-// - feedback de sucesso/erro
-// - redirecionamento após criar
-function submit() {
-  // Mock: só demonstra o fluxo
-  alert(
-    `Vaga criada (mock)!\n\n` +
-      `Título: ${form.title}\n` +
-      `Categoria: ${form.category}\n` +
-      `Cidade: ${form.city}\n` +
-      `Carga: ${form.workloadHours}h\n`
-  );
+// Verifica se a instituição tem perfil cadastrado
+onMounted(async () => {
+  checkingProfile.value = true;
+  try {
+    await institutionStore.getMe();
+  } catch (err: any) {
+    // Se não tiver perfil, mostra mensagem
+    if (err?.response?.status === 404) {
+      error.value = "Você precisa cadastrar o perfil da instituição antes de criar vagas. Acesse o dashboard para cadastrar.";
+    }
+  } finally {
+    checkingProfile.value = false;
+  }
+});
 
-  // volta para "Minhas vagas"
-  router.push({ name: "institution_opportunities" });
+async function submit() {
+  error.value = "";
+  success.value = false;
+
+  if (!form.title.trim() || !form.description.trim()) {
+    error.value = "Preencha todos os campos obrigatórios";
+    return;
+  }
+
+  try {
+    await opportunityStore.create({
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category: form.category || null,
+      city: form.city.trim() || null,
+      workloadHours: form.workloadHours || 0,
+      isActive: true,
+    });
+
+    success.value = true;
+    
+    // redireciona após 1 segundo
+    setTimeout(() => {
+      router.push({ name: "institution_opportunities" });
+    }, 1000);
+  } catch (err: any) {
+    // mostra a mensagem específica do backend
+    let errorMessage = err?.response?.data?.message || opportunityStore.error || "Erro ao criar vaga. Tente novamente.";
+    
+    // traduz mensagens comuns do backend para português mais claro
+    if (errorMessage.includes("não cadastrou o perfil")) {
+      errorMessage = "Você precisa cadastrar o perfil da instituição antes de criar vagas. Acesse o dashboard para cadastrar.";
+    } else if (errorMessage.includes("não aprovada")) {
+      errorMessage = "Sua instituição ainda não foi aprovada pelo administrador. Aguarde a aprovação para criar vagas.";
+    }
+    
+    error.value = errorMessage;
+    console.error("Erro ao criar vaga:", err);
+  }
 }
 
 function cancel() {
@@ -66,7 +108,57 @@ function cancel() {
         background: #fff;
       "
     >
-      <form @submit.prevent="submit" style="display: grid; gap: 12px">
+      <!-- verificando perfil -->
+      <div v-if="checkingProfile" style="text-align: center; padding: 40px">
+        <p style="opacity: 0.75">Verificando perfil da instituição...</p>
+      </div>
+
+      <form v-else @submit.prevent="submit" style="display: grid; gap: 12px">
+        <!-- mensagem de sucesso -->
+        <div
+          v-if="success"
+          style="
+            padding: 16px;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            border-radius: 10px;
+            color: #166534;
+          "
+        >
+          <strong>✓ Vaga criada com sucesso!</strong>
+          <p style="margin: 8px 0 0; opacity: 0.8">Redirecionando...</p>
+        </div>
+
+        <!-- mensagem de erro -->
+        <div
+          v-else-if="error"
+          style="
+            padding: 16px;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 10px;
+            color: #c33;
+          "
+        >
+          <strong>⚠️ {{ error }}</strong>
+          <div v-if="error.includes('cadastrar o perfil')" style="margin-top: 12px">
+            <RouterLink
+              to="/app/institution/dashboard"
+              style="
+                display: inline-block;
+                padding: 8px 12px;
+                background: #c33;
+                color: #fff;
+                border-radius: 8px;
+                text-decoration: none;
+                font-size: 13px;
+              "
+            >
+              Ir para Dashboard
+            </RouterLink>
+          </div>
+        </div>
+
         <div>
           <label
             style="
@@ -218,16 +310,19 @@ function cancel() {
 
           <button
             type="submit"
-            style="
-              padding: 10px 12px;
-              border: 1px solid #111827;
-              border-radius: 10px;
-              background: #111827;
-              color: #fff;
-              cursor: pointer;
-            "
+            :disabled="opportunityStore.loading || success"
+            :style="{
+              padding: '10px 12px',
+              border: '1px solid #111827',
+              borderRadius: '10px',
+              background: '#111827',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: '700',
+              opacity: opportunityStore.loading || success ? 0.6 : 1,
+            }"
           >
-            Criar vaga (mock)
+            {{ opportunityStore.loading ? "Criando..." : success ? "Criada!" : "Criar vaga" }}
           </button>
         </div>
       </form>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import StatusBadge from "../ui/StatusBadge.vue";
 
 export type Opportunity = {
@@ -13,9 +15,19 @@ export type Opportunity = {
     status: "pending" | "accepted" | "rejected" | "completed";
 };
 
-defineProps<{
+const props = defineProps<{
     opportunity: Opportunity;
 }>();
+
+const route = useRoute();
+
+// Verifica se está na rota protegida do aluno
+const isStudentRoute = computed(() => route.path.startsWith("/app/student"));
+const opportunityLink = computed(() => 
+  isStudentRoute.value 
+    ? `/app/student/oportunidades/${props.opportunity.id}` 
+    : `/oportunidades/${props.opportunity.id}`
+);
 </script>
 
 <template>
@@ -66,7 +78,7 @@ defineProps<{
 
     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:4px;">
         <StatusBadge :status="opportunity.status" />
-        <RouterLink :to="`/oportunidades/${opportunity.id}`">Ver detalhes →</RouterLink>
+        <RouterLink :to="opportunityLink">Ver detalhes →</RouterLink>
     </div>
     </article>
 </template>

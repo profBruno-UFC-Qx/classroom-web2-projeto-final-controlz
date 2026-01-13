@@ -1,111 +1,200 @@
 <script setup lang="ts">
-    // TODO: integrar com API real
-    // - substituir dados mock por useOpportunityStore().list()
-    // - integrar com GET /opportunities?page=&limit=&category=&city=&institutionId=&isActive=
-    // - implementar paginação
-    // - implementar filtros (category, city, etc)
-    // - loading states
-    // - tratamento de erros
-    import { computed, ref } from "vue";
-    import OpportunityCard, { type Opportunity } from "../../components/opportunities/OpportunityCard.vue";
+import { computed, onMounted, ref } from "vue";
+import { useOpportunityStore, type Opportunity } from "../../stores/opportunity.store";
+import OpportunityCard from "../../components/opportunities/OpportunityCard.vue";
 
-    
-    const query = ref("");
-    
-    const items = ref<Opportunity[]>([
-    {
-        id: 1,
-        title: "Apoio escolar em reforço de matemática",
-        institutionName: "Projeto Semeando Futuro",
-        city: "Quixadá",
-        category: "Educação",
-        workloadHours: 40,
-        skills: ["Comunicação", "Paciência"],
-        shortDescription: "Apoie estudantes do ensino básico com reforço semanal e atividades guiadas.",
-        status: "pending",
-    },
-    {
-        id: 2,
-        title: "Campanha solidária de arrecadação",
-        institutionName: "Casa Acolher",
-        city: "Fortaleza",
-        category: "Social",
-        workloadHours: 20,
-        skills: ["Organização", "Trabalho em equipe"],
-        shortDescription: "Ajude na triagem, organização e logística de doações para famílias assistidas.",
-        status: "accepted",
-    },
-    {
-        id: 3,
-        title: "Mutirão de limpeza ambiental",
-        institutionName: "VerdeVivo",
-        city: "Quixadá",
-        category: "Meio Ambiente",
-        workloadHours: 10,
-        skills: ["Proatividade"],
-        shortDescription: "Participe de um mutirão em áreas públicas com foco em educação ambiental.",
-        status: "completed",
-    },
-    ]);
-    
-    const filtered = computed(() => {
-    const q = query.value.trim().toLowerCase();
-    if (!q) return items.value;
-    return items.value.filter((o) => o.title.toLowerCase().includes(q));
-    });
+const opportunityStore = useOpportunityStore();
+
+const query = ref("");
+const categoryFilter = ref<string>("");
+const cityFilter = ref<string>("");
+
+// Mapear dados do backend para o formato esperado pelo OpportunityCard
+function mapToCardFormat(opp: Opportunity) {
+  // Pegar primeiras 100 caracteres da descrição como shortDescription
+  const shortDescription = opp.description.length > 100 
+    ? opp.description.substring(0, 100) + "..." 
+    : opp.description;
+
+  return {
+    id: opp.id,
+    title: opp.title,
+    institutionName: "Instituição", // TODO: buscar nome da instituição se necessário
+    city: opp.city || "Não informado",
+    category: opp.category || "Geral",
+    workloadHours: opp.workloadHours,
+    skills: [], // Backend não retorna skills, pode ser adicionado depois
+    shortDescription,
+    status: opp.isActive ? "pending" : "completed" as "pending" | "accepted" | "rejected" | "completed",
+  };
+}
+
+const items = computed(() => {
+  return opportunityStore.opportunities.map(mapToCardFormat);
+});
+
+const filtered = computed(() => {
+  let result = items.value;
+  
+  // Filtro de busca por título
+  const q = query.value.trim().toLowerCase();
+  if (q) {
+    result = result.filter((o) => o.title.toLowerCase().includes(q));
+  }
+  
+  // Filtro por categoria
+  if (categoryFilter.value) {
+    result = result.filter((o) => o.category === categoryFilter.value);
+  }
+  
+  // Filtro por cidade
+  if (cityFilter.value) {
+    result = result.filter((o) => o.city === cityFilter.value);
+  }
+  
+  return result;
+});
+
+// Lista de categorias únicas para o filtro
+const categories = computed(() => {
+  const cats = new Set(items.value.map((o) => o.category));
+  return Array.from(cats).sort();
+});
+
+// Lista de cidades únicas para o filtro
+const cities = computed(() => {
+  const citiesList = new Set(items.value.map((o) => o.city).filter(Boolean));
+  return Array.from(citiesList).sort();
+});
+
+onMounted(async () => {
+  try {
+    await opportunityStore.list({ isActive: true, limit: 50 });
+  } catch (err) {
+    console.error("Erro ao carregar oportunidades:", err);
+  }
+});
 </script>
     
 <template>
-<div>
+  <div>
     <div
-    style="
+      style="
         display: flex;
         justify-content: space-between;
         align-items: end;
         gap: 12px;
         flex-wrap: wrap;
-    "
+        margin-bottom: 16px;
+      "
     >
-    <div>
+      <div>
         <h2 style="margin: 0">Oportunidades</h2>
         <p style="margin: 6px 0 0; opacity: 0.8">
-        Explore vagas ativas e encontre uma causa para participar.
+          Explore vagas ativas e encontre uma causa para participar.
         </p>
+      </div>
     </div>
 
-    <input
+    <!-- Filtros -->
+    <div
+      style="
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 10px;
+      "
+    >
+      <input
         v-model="query"
         placeholder="Buscar por título..."
         style="
-        padding: 10px 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        min-width: 260px;
+          flex: 1;
+          min-width: 200px;
+          padding: 10px 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
         "
-    />
+      />
+      <select
+        v-model="categoryFilter"
+        style="
+          padding: 10px 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          min-width: 150px;
+        "
+      >
+        <option value="">Todas as categorias</option>
+        <option v-for="cat in categories" :key="cat" :value="cat">
+          {{ cat }}
+        </option>
+      </select>
+      <select
+        v-model="cityFilter"
+        style="
+          padding: 10px 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          min-width: 150px;
+        "
+      >
+        <option value="">Todas as cidades</option>
+        <option v-for="city in cities" :key="city" :value="city">
+          {{ city }}
+        </option>
+      </select>
     </div>
 
+    <!-- Loading -->
+    <div v-if="opportunityStore.loading" style="text-align: center; padding: 40px">
+      <p style="opacity: 0.75">Carregando oportunidades...</p>
+    </div>
+
+    <!-- Erro -->
     <div
-    style="
+      v-else-if="opportunityStore.error"
+      style="
+        padding: 16px;
+        background: #fee;
+        border: 1px solid #fcc;
+        border-radius: 10px;
+        color: #c33;
+        margin-bottom: 16px;
+      "
+    >
+      {{ opportunityStore.error }}
+    </div>
+
+    <!-- Lista de oportunidades -->
+    <div
+      v-else-if="filtered.length > 0"
+      style="
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 12px;
-        margin-top: 14px;
-    "
+      "
     >
-    <OpportunityCard v-for="o in filtered" :key="o.id" :opportunity="o" />
+      <OpportunityCard v-for="o in filtered" :key="o.id" :opportunity="o" />
     </div>
 
+    <!-- Sem resultados -->
     <div
-    v-if="filtered.length === 0"
-    style="
+      v-else
+      style="
         margin-top: 14px;
-        padding: 14px;
+        padding: 40px;
         border: 1px dashed #e5e7eb;
         border-radius: 12px;
-    "
+        text-align: center;
+      "
     >
-    Nenhuma oportunidade encontrada com esse termo.
+      <p style="opacity: 0.75; margin: 0">
+        Nenhuma oportunidade encontrada com os filtros selecionados.
+      </p>
     </div>
-</div>
+  </div>
 </template>

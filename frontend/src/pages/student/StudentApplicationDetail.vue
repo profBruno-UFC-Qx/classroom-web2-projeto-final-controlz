@@ -1,66 +1,51 @@
 <script setup lang="ts">
-// TODO: integrar com API real
-// - substituir dados mock por useApplicationStore() e useOpportunityStore()
-// - carregar dados reais da candidatura e oportunidade
-// - ações mock (download termo, upload, certificado) podem ficar mock por enquanto
-// - loading states
-// - tratamento de erros
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  applications,
-  getOpportunityById,
-  type ApplicationStatus,
-} from "../../data/mock";
+import { useApplicationStore, type Application } from "../../stores/application.store";
+import { useOpportunityStore } from "../../stores/opportunity.store";
 import { useAuthStore } from "../../stores/auth.store";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const applicationStore = useApplicationStore();
+const opportunityStore = useOpportunityStore();
 
-// ✅ CORREÇÃO DO ERRO: sempre normalizar param para string
 const applicationId = String(route.params.id);
+const application = ref<Application | null>(null);
+const opportunity = ref<any>(null);
+const loading = ref(true);
+const error = ref("");
 
-// (mock) se seu auth não tem id real, usa um fixo por enquanto
-const studentId = computed(() => auth.user?.id ?? "stu1");
-
-const application = computed(() =>
-  applications.find((a) => a.id === applicationId)
-);
-const opportunity = computed(() =>
-  application.value
-    ? getOpportunityById(application.value.opportunityId)
-    : undefined
-);
-
-// 🔒 Segurança: impedir aluno ver candidatura de outro aluno (mesmo em mock)
 const canAccess = computed(() => {
-  if (!application.value) return false;
-  return application.value.studentId === studentId.value;
+  if (!application.value || !auth.user) return false;
+  return application.value.studentId === auth.user.id;
 });
 
-const statusLabel = (s: ApplicationStatus) => {
-  if (s === "pendente") return "Pendente";
-  if (s === "aceita") return "Aceita";
-  if (s === "recusada") return "Recusada";
-  if (s === "concluida") return "Concluída";
-  return s;
+const statusLabel = (s: string) => {
+  const map: Record<string, string> = {
+    pending: "Pendente",
+    accepted: "Aceita",
+    rejected: "Recusada",
+    completed: "Concluída",
+  };
+  return map[s] || s;
 };
 
 const statusHint = computed(() => {
   const s = application.value?.status;
   if (!s) return "";
 
-  if (s === "pendente") {
+  if (s === "pending") {
     return "Sua candidatura foi enviada. Aguarde a análise da instituição.";
   }
-  if (s === "aceita") {
+  if (s === "accepted") {
     return "Parabéns! Você foi aceito. Agora siga o fluxo do termo de compromisso.";
   }
-  if (s === "recusada") {
+  if (s === "rejected") {
     return "Sua candidatura foi recusada. Você pode se candidatar a outras oportunidades.";
   }
-  if (s === "concluida") {
+  if (s === "completed") {
     return "Atividade concluída! Seu certificado está disponível para download.";
   }
   return "";
@@ -71,9 +56,9 @@ const steps = computed(() => {
   const s = application.value?.status;
 
   const sentDone = !!application.value;
-  const approvedDone = s === "aceita" || s === "concluida";
-  const rejectedDone = s === "recusada";
-  const completedDone = s === "concluida";
+  const approvedDone = s === "accepted" || s === "completed";
+  const rejectedDone = s === "rejected";
+  const completedDone = s === "completed";
 
   return {
     sentDone,
@@ -83,7 +68,45 @@ const steps = computed(() => {
   };
 });
 
-// Ações mock
+// Carregar dados
+onMounted(async () => {
+  loading.value = true;
+  error.value = "";
+  try {
+    // Buscar todas as candidaturas e encontrar a específica
+    const result = await applicationStore.listMyApplications({ limit: 100 });
+    const found = result.data.find((a) => a.id === applicationId);
+
+    if (!found) {
+      error.value = "Candidatura não encontrada";
+      loading.value = false;
+      return;
+    }
+
+    // Verificar se pertence ao aluno
+    if (found.studentId !== auth.user?.id) {
+      error.value = "Acesso negado";
+      loading.value = false;
+      return;
+    }
+
+    application.value = found;
+
+    // Buscar dados da oportunidade
+    try {
+      await opportunityStore.getById(found.opportunityId);
+      opportunity.value = opportunityStore.currentOpportunity;
+    } catch (err) {
+      console.error("Erro ao carregar oportunidade:", err);
+    }
+  } catch (err: any) {
+    error.value = applicationStore.error || "Erro ao carregar candidatura";
+  } finally {
+    loading.value = false;
+  }
+});
+
+// Ações mock (podem ficar mock por enquanto)
 function downloadTerm() {
   alert("Download do termo (mock).");
 }
@@ -117,9 +140,14 @@ function goBack() {
       ← Voltar para minhas candidaturas
     </button>
 
+    <!-- Loading -->
+    <div v-if="loading" style="text-align: center; padding: 40px">
+      <p style="opacity: 0.75">Carregando candidatura...</p>
+    </div>
+
     <!-- Erros / segurança -->
     <div
-      v-if="!application || !opportunity"
+      v-else-if="error || !application"
       style="
         padding: 18px;
         border: 1px solid #e5e7eb;
@@ -128,7 +156,7 @@ function goBack() {
       "
     >
       <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 6px">
-        Candidatura não encontrada
+        {{ error || "Candidatura não encontrada" }}
       </h1>
       <p style="opacity: 0.75; margin: 0">Verifique se o link está correto.</p>
     </div>
@@ -180,14 +208,18 @@ function goBack() {
           "
         >
           <div>
-            <div style="font-size: 18px; font-weight: 800">
+            <div v-if="opportunity" style="font-size: 18px; font-weight: 800">
               {{ opportunity.title }}
             </div>
-            <div style="opacity: 0.75; margin-top: 4px">
-              {{ opportunity.institutionName }} • {{ opportunity.city }}
+            <div v-else style="font-size: 18px; font-weight: 800; opacity: 0.5">
+              Carregando...
             </div>
-            <div style="opacity: 0.75; margin-top: 4px; font-size: 13px">
-              Candidatura em: {{ application.createdAt }}
+            <div v-if="opportunity" style="opacity: 0.75; margin-top: 4px">
+              {{ opportunity.city || "Cidade não informada" }}
+              <span v-if="opportunity.category"> • {{ opportunity.category }}</span>
+            </div>
+            <div v-if="application" style="opacity: 0.75; margin-top: 4px; font-size: 13px">
+              Candidatura em: {{ new Date(application.createdAt).toLocaleDateString("pt-BR") }}
             </div>
           </div>
 
@@ -204,10 +236,11 @@ function goBack() {
                 font-weight: 700;
               "
             >
-              {{ statusLabel(application.status) }}
+              {{ application ? statusLabel(application.status) : "-" }}
             </div>
-            <div style="margin-top: 8px; opacity: 0.75; font-size: 13px">
-              {{ opportunity.workloadHours }}h • {{ opportunity.category }}
+            <div v-if="opportunity" style="margin-top: 8px; opacity: 0.75; font-size: 13px">
+              {{ opportunity.workloadHours }}h
+              <span v-if="opportunity.category"> • {{ opportunity.category }}</span>
             </div>
           </div>
         </div>
@@ -312,16 +345,16 @@ function goBack() {
         </h2>
 
         <!-- Se pendente -->
-        <div v-if="application.status === 'pendente'" style="opacity: 0.8">
+        <div v-if="application && application.status === 'pending'" style="opacity: 0.8">
           Aguarde a aprovação da instituição para iniciar o fluxo de documentos.
         </div>
 
         <!-- Se recusada -->
-        <div v-else-if="application.status === 'recusada'" style="opacity: 0.8">
+        <div v-else-if="application && application.status === 'rejected'" style="opacity: 0.8">
           Esta candidatura foi recusada. Você pode explorar novas oportunidades.
           <div style="margin-top: 10px">
             <RouterLink
-              to="/oportunidades"
+              to="/app/student/oportunidades"
               style="
                 display: inline-block;
                 padding: 10px 12px;
@@ -336,7 +369,7 @@ function goBack() {
         </div>
 
         <!-- Se aceita -->
-        <div v-else-if="application.status === 'aceita'">
+        <div v-else-if="application && application.status === 'accepted'">
           <div style="display: flex; gap: 10px; flex-wrap: wrap">
             <button
               @click="downloadTerm"
@@ -372,7 +405,7 @@ function goBack() {
         </div>
 
         <!-- Se concluída -->
-        <div v-else-if="application.status === 'concluida'">
+        <div v-else-if="application && application.status === 'completed'">
           <div style="display: flex; gap: 10px; flex-wrap: wrap">
             <button
               @click="downloadCertificate"

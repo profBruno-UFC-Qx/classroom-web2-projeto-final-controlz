@@ -121,7 +121,7 @@ onMounted(() => {
           <strong>✓ Perfil atualizado com sucesso!</strong>
         </v-alert>
 
-        <!-- formulário -->
+        <!-- Formulário -->
         <v-form @submit.prevent="save">
           <v-text-field
             v-model="form.name"

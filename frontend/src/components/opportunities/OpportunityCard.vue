@@ -31,54 +31,77 @@ const opportunityLink = computed(() =>
 </script>
 
 <template>
-    <article
-    style="
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        background: white;
-    "
-    >
-    <div style="display:flex; justify-content:space-between; gap:10px;">
-        <div>
-        <h3 style="margin:0; font-size:16px;">{{ opportunity.title }}</h3>
-        <div style="font-size:13px; opacity:.75; margin-top:2px;">
-            {{ opportunity.institutionName }} • {{ opportunity.city }}
+  <v-card class="mb-4 h-100 d-flex flex-column" elevation="2" style="overflow: hidden;">
+    <v-card-title class="pa-4 pb-2">
+      <div class="w-100">
+        <div class="text-h6 mb-2" :title="opportunity.title" style="word-break: break-word; line-height: 1.4; hyphens: auto;">
+          {{ opportunity.title }}
         </div>
+        <div class="d-flex justify-space-between align-items-center flex-wrap" style="gap: 8px;">
+          <div class="text-caption text-medium-emphasis d-flex flex-wrap align-center" style="gap: 8px;">
+            <span class="d-flex align-center">
+              <v-icon size="small" class="mr-1">mdi-office-building</v-icon>
+              <span class="text-truncate" style="max-width: 120px;">{{ opportunity.institutionName }}</span>
+            </span>
+            <span class="d-flex align-center">
+              <v-icon size="small" class="mr-1">mdi-map-marker</v-icon>
+              <span class="text-truncate" style="max-width: 100px;">{{ opportunity.city }}</span>
+            </span>
+          </div>
+          <div class="text-right">
+            <div class="text-h6 text-primary d-flex align-center">
+              <v-icon size="small" class="mr-1">mdi-clock-outline</v-icon>
+              {{ opportunity.workloadHours }}h
+            </div>
+            <div class="text-caption text-medium-emphasis">carga horária</div>
+          </div>
         </div>
+      </div>
+    </v-card-title>
 
-        <div style="text-align:right; font-size:13px;">
-        <div style="font-weight:700;">{{ opportunity.workloadHours }}h</div>
-        <div style="opacity:.75;">carga horária</div>
-        </div>
-    </div>
-
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <span
-        style="font-size:12px; padding:4px 8px; border-radius:999px; background:#F3F4F6;"
+    <v-card-text class="flex-grow-1 pa-4 pt-2">
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <v-chip size="small" color="primary" variant="outlined">
+          {{ opportunity.category }}
+        </v-chip>
+        <v-chip
+          v-for="skill in opportunity.skills"
+          :key="skill"
+          size="small"
+          variant="outlined"
         >
-        {{ opportunity.category }}
-        </span>
+          <v-icon start size="small">mdi-tag</v-icon>
+          {{ skill }}
+        </v-chip>
+      </div>
 
-        <span
-        v-for="skill in opportunity.skills"
-        :key="skill"
-        style="font-size:12px; padding:4px 8px; border-radius:999px; background:#F3F4F6;"
-        >
-        {{ skill }}
-        </span>
-    </div>
-
-    <p style="margin:0; font-size:14px; opacity:.9;">
+      <p class="text-body-2 mb-0" style="word-break: break-word; overflow-wrap: break-word; line-height: 1.5; hyphens: auto;">
         {{ opportunity.shortDescription }}
-    </p>
+      </p>
+    </v-card-text>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:4px;">
-        <StatusBadge :status="opportunity.status" />
-        <RouterLink :to="opportunityLink">Ver detalhes →</RouterLink>
-    </div>
-    </article>
+    <v-card-actions class="pa-4 pt-2 d-flex justify-space-between flex-wrap" style="gap: 8px;">
+      <StatusBadge :status="opportunity.status" />
+      <v-btn
+        :to="opportunityLink"
+        variant="text"
+        color="primary"
+        append-icon="mdi-arrow-right"
+        size="small"
+      >
+        Ver detalhes
+      </v-btn>
+    </v-card-actions>
+  </v-card>
 </template>
+
+<style scoped>
+.min-width-0 {
+  min-width: 0;
+}
+
+.text-break {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+</style>

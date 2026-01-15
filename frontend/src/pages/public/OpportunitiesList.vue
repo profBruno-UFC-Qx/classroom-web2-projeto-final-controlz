@@ -77,124 +77,86 @@ onMounted(async () => {
 </script>
     
 <template>
-  <div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: end;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
-      "
-    >
-      <div>
-        <h2 style="margin: 0">Oportunidades</h2>
-        <p style="margin: 6px 0 0; opacity: 0.8">
+  <div style="width: 100%; overflow-x: hidden;">
+    <v-row class="mb-4">
+      <v-col>
+        <h2 class="text-h4 mb-2">Oportunidades</h2>
+        <p class="text-body-1 text-medium-emphasis">
           Explore vagas ativas e encontre uma causa para participar.
         </p>
-      </div>
-    </div>
+      </v-col>
+    </v-row>
 
     <!-- Filtros -->
-    <div
-      style="
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
-        padding: 12px;
-        background: #f9fafb;
-        border-radius: 10px;
-      "
-    >
-      <input
-        v-model="query"
-        placeholder="Buscar por título..."
-        style="
-          flex: 1;
-          min-width: 200px;
-          padding: 10px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-        "
-      />
-      <select
-        v-model="categoryFilter"
-        style="
-          padding: 10px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          min-width: 150px;
-        "
-      >
-        <option value="">Todas as categorias</option>
-        <option v-for="cat in categories" :key="cat" :value="cat">
-          {{ cat }}
-        </option>
-      </select>
-      <select
-        v-model="cityFilter"
-        style="
-          padding: 10px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          min-width: 150px;
-        "
-      >
-        <option value="">Todas as cidades</option>
-        <option v-for="city in cities" :key="city" :value="city">
-          {{ city }}
-        </option>
-      </select>
-    </div>
+    <v-card class="mb-4" elevation="1">
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="query"
+              placeholder="Buscar por título..."
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              hide-details
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-select
+              v-model="categoryFilter"
+              :items="[{ title: 'Todas as categorias', value: '' }, ...categories.map(c => ({ title: c, value: c }))]"
+              prepend-inner-icon="mdi-tag"
+              variant="outlined"
+              density="compact"
+              hide-details
+            ></v-select>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-select
+              v-model="cityFilter"
+              :items="[{ title: 'Todas as cidades', value: '' }, ...cities.map(c => ({ title: c, value: c }))]"
+              prepend-inner-icon="mdi-map-marker"
+              variant="outlined"
+              density="compact"
+              hide-details
+            ></v-select>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
     <!-- Loading -->
-    <div v-if="opportunityStore.loading" style="text-align: center; padding: 40px">
-      <p style="opacity: 0.75">Carregando oportunidades...</p>
-    </div>
+    <v-card v-if="opportunityStore.loading" class="text-center pa-8">
+      <v-progress-circular indeterminate color="primary" class="mb-4"></v-progress-circular>
+      <p class="text-medium-emphasis">Carregando oportunidades...</p>
+    </v-card>
 
     <!-- Erro -->
-    <div
-      v-else-if="opportunityStore.error"
-      style="
-        padding: 16px;
-        background: #fee;
-        border: 1px solid #fcc;
-        border-radius: 10px;
-        color: #c33;
-        margin-bottom: 16px;
-      "
-    >
+    <v-alert v-else-if="opportunityStore.error" type="error" class="mb-4">
       {{ opportunityStore.error }}
-    </div>
+    </v-alert>
 
     <!-- Lista de oportunidades -->
-    <div
-      v-else-if="filtered.length > 0"
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 12px;
-      "
-    >
-      <OpportunityCard v-for="o in filtered" :key="o.id" :opportunity="o" />
-    </div>
+    <v-row v-else-if="filtered.length > 0" class="ma-0">
+      <v-col
+        v-for="o in filtered"
+        :key="o.id"
+        cols="12"
+        sm="6"
+        md="4"
+        lg="3"
+        class="pa-2"
+      >
+        <OpportunityCard :opportunity="o" />
+      </v-col>
+    </v-row>
 
     <!-- Sem resultados -->
-    <div
-      v-else
-      style="
-        margin-top: 14px;
-        padding: 40px;
-        border: 1px dashed #e5e7eb;
-        border-radius: 12px;
-        text-align: center;
-      "
-    >
-      <p style="opacity: 0.75; margin: 0">
+    <v-card v-else class="text-center pa-8">
+      <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-information-outline</v-icon>
+      <p class="text-body-1 text-medium-emphasis">
         Nenhuma oportunidade encontrada com os filtros selecionados.
       </p>
-    </div>
+    </v-card>
   </div>
 </template>

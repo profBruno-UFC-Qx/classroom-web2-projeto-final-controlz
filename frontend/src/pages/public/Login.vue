@@ -35,86 +35,68 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div style="max-width: 420px">
-    <h2 style="margin: 0 0 8px">Entrar</h2>
-    <p style="opacity: 0.75; margin: 0 0 20px">Faça login para acessar sua conta</p>
+  <v-row justify="center">
+    <v-col cols="12" sm="8" md="6" lg="4">
+      <v-card class="pa-6" elevation="3">
+        <v-card-title class="text-h4 mb-2">Entrar</v-card-title>
+        <v-card-subtitle class="mb-4"
+          >Faça login para acessar sua conta</v-card-subtitle
+        >
 
-    <form @submit.prevent="handleSubmit" style="display: flex; flex-direction: column; gap: 12px">
-      <div v-if="error" style="padding: 12px; background: #fee; border: 1px solid #fcc; border-radius: 8px; color: #c33">
-        {{ error }}
-      </div>
+        <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+          {{ error }}
+        </v-alert>
 
-      <div>
-        <label style="display: block; font-size: 13px; opacity: 0.75; margin-bottom: 6px">
-          E-mail *
-        </label>
-        <input
-          v-model="email"
-          type="email"
-          required
-          placeholder="seu@email.com"
-          style="
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            box-sizing: border-box;
-          "
-        />
-      </div>
+        <v-form @submit.prevent="handleSubmit">
+          <v-text-field
+            v-model="email"
+            label="E-mail"
+            type="email"
+            prepend-inner-icon="mdi-email"
+            placeholder="seu@email.com"
+            required
+            class="mb-3"
+            variant="outlined"
+          ></v-text-field>
 
-      <div>
-        <label style="display: block; font-size: 13px; opacity: 0.75; margin-bottom: 6px">
-          Senha *
-        </label>
-        <input
-          v-model="password"
-          type="password"
-          required
-          placeholder="••••••••"
-          style="
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            box-sizing: border-box;
-          "
-        />
-      </div>
+          <v-text-field
+            v-model="password"
+            label="Senha"
+            type="password"
+            prepend-inner-icon="mdi-lock"
+            placeholder="••••••••"
+            required
+            class="mb-4"
+            variant="outlined"
+          ></v-text-field>
 
-      <button
-        type="submit"
-        :disabled="auth.loading"
-        style="
-          padding: 12px 16px;
-          border: 1px solid #111827;
-          border-radius: 10px;
-          background: #111827;
-          color: #fff;
-          cursor: pointer;
-          font-weight: 700;
-          margin-top: 8px;
-        "
-      >
-        {{ auth.loading ? "Entrando..." : "Entrar" }}
-      </button>
-    </form>
+          <v-btn
+            type="submit"
+            :loading="auth.loading"
+            color="primary"
+            size="large"
+            block
+            prepend-icon="mdi-login"
+          >
+            {{ auth.loading ? "Entrando..." : "Entrar" }}
+          </v-btn>
+        </v-form>
 
-    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb">
-      <p style="font-size: 13px; opacity: 0.75; margin: 0 0 8px">Não tem uma conta?</p>
-      <RouterLink
-        to="/cadastro"
-        style="
-          display: inline-block;
-          padding: 10px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          text-decoration: none;
-          font-size: 13px;
-        "
-      >
-        Criar conta
-      </RouterLink>
-    </div>
-  </div>
+        <v-divider class="my-6"></v-divider>
+
+        <div class="text-center">
+          <p class="text-body-2 text-medium-emphasis mb-3">
+            Não tem uma conta?
+          </p>
+          <v-btn
+            to="/cadastro"
+            variant="outlined"
+            prepend-icon="mdi-account-plus"
+          >
+            Criar conta
+          </v-btn>
+        </div>
+      </v-card>
+    </v-col>
+  </v-row>
 </template>

@@ -1,19 +1,52 @@
 <template>
-    <div>
-    <header style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #e5e7eb;">
+  <div style="overflow-x: hidden; width: 100%;">
+    <v-app-bar color="primary" elevation="1">
+      <v-app-bar-title>
         <strong>Conecta Voluntário</strong>
-        <nav style="display:flex; gap:12px; align-items:center;">
-        <RouterLink to="/">Início</RouterLink>
-        <RouterLink to="/oportunidades">Oportunidades</RouterLink>
-        <RouterLink to="/login">Entrar</RouterLink>
-        <RouterLink to="/cadastro">Cadastrar</RouterLink>
-        </nav>
-    </header>
-    <main style="max-width:1100px; margin:0 auto; padding:18px;">
+      </v-app-bar-title>
+      <v-spacer></v-spacer>
+      <v-btn
+        to="/"
+        variant="text"
+        prepend-icon="mdi-home"
+      >
+        Início
+      </v-btn>
+      <v-btn
+        to="/oportunidades"
+        variant="text"
+        prepend-icon="mdi-briefcase"
+      >
+        Oportunidades
+      </v-btn>
+      <v-btn
+        to="/login"
+        variant="text"
+        prepend-icon="mdi-login"
+      >
+        Entrar
+      </v-btn>
+      <v-btn
+        to="/cadastro"
+        variant="text"
+        prepend-icon="mdi-account-plus"
+      >
+        Cadastrar
+      </v-btn>
+    </v-app-bar>
+
+    <v-main>
+      <v-container class="pa-4" fluid style="max-width: 1400px; width: 100%;">
         <RouterView />
-    </main>
-        <footer style="padding:14px 18px; border-top:1px solid #e5e7eb; margin-top:30px; font-size:14px;">
-        © Conecta Voluntário — Extensão e Impacto Social
-    </footer>
-    </div>
+      </v-container>
+    </v-main>
+
+    <v-footer color="grey-lighten-4" class="mt-8">
+      <v-container>
+        <div class="text-center w-100">
+          © Conecta Voluntário — Extensão e Impacto Social
+        </div>
+      </v-container>
+    </v-footer>
+  </div>
 </template>

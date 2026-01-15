@@ -28,15 +28,26 @@ const categories = [
   "Direitos",
 ];
 
-// Verifica se a instituição tem perfil cadastrado
+// verifica se a instituição tem perfil cadastrado e está aprovada
 onMounted(async () => {
   checkingProfile.value = true;
   try {
-    await institutionStore.getMe();
+    const institution = await institutionStore.getMe();
+    
+    // verifica se a instituição está aprovada
+    if (institution.status !== "approved") {
+      if (institution.status === "pending") {
+        error.value = "Sua instituição ainda não foi aprovada pelo administrador. Aguarde a aprovação para criar vagas.";
+      } else if (institution.status === "rejected") {
+        error.value = "Sua instituição foi rejeitada. Entre em contato com o administrador para mais informações.";
+      }
+    }
   } catch (err: any) {
-    // Se não tiver perfil, mostra mensagem
+    // se nao tiver perfil, mostra mensagem
     if (err?.response?.status === 404) {
       error.value = "Você precisa cadastrar o perfil da instituição antes de criar vagas. Acesse o dashboard para cadastrar.";
+    } else {
+      error.value = institutionStore.error || "Erro ao verificar perfil da instituição.";
     }
   } finally {
     checkingProfile.value = false;
@@ -47,8 +58,29 @@ async function submit() {
   error.value = "";
   success.value = false;
 
-  if (!form.title.trim() || !form.description.trim()) {
+  // verifica novamente o status antes de criar
+  try {
+    const institution = await institutionStore.getMe();
+    if (institution.status !== "approved") {
+      if (institution.status === "pending") {
+        error.value = "Sua instituição ainda não foi aprovada pelo administrador. Aguarde a aprovação para criar vagas.";
+      } else if (institution.status === "rejected") {
+        error.value = "Sua instituição foi rejeitada. Entre em contato com o administrador para mais informações.";
+      }
+      return;
+    }
+  } catch (err: any) {
+    error.value = "Erro ao verificar status da instituição. Tente novamente.";
+    return;
+  }
+
+  if (!form.title.trim() || !form.description.trim() || !form.city.trim()) {
     error.value = "Preencha todos os campos obrigatórios";
+    return;
+  }
+
+  if (form.workloadHours < 1) {
+    error.value = "A carga horária deve ser maior que zero";
     return;
   }
 
@@ -73,10 +105,12 @@ async function submit() {
     let errorMessage = err?.response?.data?.message || opportunityStore.error || "Erro ao criar vaga. Tente novamente.";
     
     // traduz mensagens comuns do backend para português mais claro
-    if (errorMessage.includes("não cadastrou o perfil")) {
+    if (errorMessage.includes("não cadastrou o perfil") || errorMessage.includes("Instituição ainda não cadastrou")) {
       errorMessage = "Você precisa cadastrar o perfil da instituição antes de criar vagas. Acesse o dashboard para cadastrar.";
-    } else if (errorMessage.includes("não aprovada")) {
+    } else if (errorMessage.includes("não aprovada") || errorMessage.includes("não aprovada pelo admin")) {
       errorMessage = "Sua instituição ainda não foi aprovada pelo administrador. Aguarde a aprovação para criar vagas.";
+    } else if (errorMessage.includes("403") || errorMessage.includes("Sem permissão")) {
+      errorMessage = "Você não tem permissão para criar vagas. Verifique se sua instituição está aprovada.";
     }
     
     error.value = errorMessage;
@@ -90,242 +124,121 @@ function cancel() {
 </script>
 
 <template>
-  <div style="max-width: 980px">
-    <header style="margin-bottom: 16px">
-      <h1 style="font-size: 28px; font-weight: 900; margin: 0 0 6px">
-        Criar Vaga
-      </h1>
-      <p style="opacity: 0.75; margin: 0">
-        Preencha as informações para publicar uma nova oportunidade.
-      </p>
-    </header>
+  <div>
+    <v-row class="mb-4">
+      <v-col>
+        <h1 class="text-h4 mb-2">Criar Vaga</h1>
+        <p class="text-body-1 text-medium-emphasis">
+          Preencha as informações para publicar uma nova oportunidade.
+        </p>
+      </v-col>
+    </v-row>
 
-    <div
-      style="
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 16px;
-        background: #fff;
-      "
-    >
+    <v-card elevation="2">
       <!-- verificando perfil -->
-      <div v-if="checkingProfile" style="text-align: center; padding: 40px">
-        <p style="opacity: 0.75">Verificando perfil da instituição...</p>
-      </div>
+      <v-card-text v-if="checkingProfile" class="text-center pa-8">
+        <v-progress-circular indeterminate color="primary" class="mb-4"></v-progress-circular>
+        <p class="text-medium-emphasis">Verificando perfil da instituição...</p>
+      </v-card-text>
 
-      <form v-else @submit.prevent="submit" style="display: grid; gap: 12px">
-        <!-- mensagem de sucesso -->
-        <div
-          v-if="success"
-          style="
-            padding: 16px;
-            background: #dcfce7;
-            border: 1px solid #86efac;
-            border-radius: 10px;
-            color: #166534;
-          "
-        >
-          <strong>✓ Vaga criada com sucesso!</strong>
-          <p style="margin: 8px 0 0; opacity: 0.8">Redirecionando...</p>
-        </div>
+      <v-card-text v-else>
+        <v-form @submit.prevent="submit">
+          <!-- mensagem de sucesso -->
+          <v-alert v-if="success" type="success" class="mb-4">
+            <strong>✓ Vaga criada com sucesso!</strong>
+            <div class="mt-2">Redirecionando...</div>
+          </v-alert>
 
-        <!-- mensagem de erro -->
-        <div
-          v-else-if="error"
-          style="
-            padding: 16px;
-            background: #fee;
-            border: 1px solid #fcc;
-            border-radius: 10px;
-            color: #c33;
-          "
-        >
-          <strong>⚠️ {{ error }}</strong>
-          <div v-if="error.includes('cadastrar o perfil')" style="margin-top: 12px">
-            <RouterLink
+          <!-- mensagem de erro -->
+          <v-alert v-else-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+            <div class="mb-2">{{ error }}</div>
+            <v-btn
+              v-if="error.includes('cadastrar o perfil') || error.includes('não aprovada')"
               to="/app/institution/dashboard"
-              style="
-                display: inline-block;
-                padding: 8px 12px;
-                background: #c33;
-                color: #fff;
-                border-radius: 8px;
-                text-decoration: none;
-                font-size: 13px;
-              "
+              color="error"
+              variant="outlined"
+              size="small"
+              prepend-icon="mdi-arrow-left"
             >
               Ir para Dashboard
-            </RouterLink>
-          </div>
-        </div>
+            </v-btn>
+          </v-alert>
 
-        <div>
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              opacity: 0.75;
-              margin-bottom: 6px;
-            "
-          >
-            Título *
-          </label>
-          <input
+          <v-text-field
             v-model="form.title"
-            required
+            label="Título"
+            prepend-inner-icon="mdi-format-title"
             placeholder="Ex: Apoio escolar em reforço de matemática"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-            "
-          />
-        </div>
+            required
+            class="mb-3"
+            variant="outlined"
+          ></v-text-field>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
-          <div>
-            <label
-              style="
-                display: block;
-                font-size: 13px;
-                opacity: 0.75;
-                margin-bottom: 6px;
-              "
-            >
-              Categoria *
-            </label>
-            <select
-              v-model="form.category"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-              "
-            >
-              <option v-for="c in categories" :key="c" :value="c">
-                {{ c }}
-              </option>
-            </select>
-          </div>
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="form.category"
+                :items="categories"
+                label="Categoria"
+                prepend-inner-icon="mdi-tag"
+                required
+                variant="outlined"
+              ></v-select>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model.number="form.workloadHours"
+                label="Carga horária (h)"
+                type="number"
+                prepend-inner-icon="mdi-clock-outline"
+                min="1"
+                required
+                variant="outlined"
+              ></v-text-field>
+            </v-col>
+          </v-row>
 
-          <div>
-            <label
-              style="
-                display: block;
-                font-size: 13px;
-                opacity: 0.75;
-                margin-bottom: 6px;
-              "
-            >
-              Carga horária (h) *
-            </label>
-            <input
-              v-model.number="form.workloadHours"
-              type="number"
-              min="1"
-              required
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-              "
-            />
-          </div>
-        </div>
-
-        <div>
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              opacity: 0.75;
-              margin-bottom: 6px;
-            "
-          >
-            Cidade *
-          </label>
-          <input
+          <v-text-field
             v-model="form.city"
-            required
+            label="Cidade"
+            prepend-inner-icon="mdi-map-marker"
             placeholder="Ex: Quixadá"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-            "
-          />
-        </div>
-
-        <div>
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              opacity: 0.75;
-              margin-bottom: 6px;
-            "
-          >
-            Descrição *
-          </label>
-          <textarea
-            v-model="form.description"
             required
-            rows="5"
+            class="mb-3"
+            variant="outlined"
+          ></v-text-field>
+
+          <v-textarea
+            v-model="form.description"
+            label="Descrição"
+            prepend-inner-icon="mdi-text"
             placeholder="Descreva o que o voluntário fará, dias/horários, detalhes..."
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-              resize: vertical;
-            "
-          />
-        </div>
+            rows="5"
+            required
+            class="mb-4"
+            variant="outlined"
+          ></v-textarea>
 
-        <div
-          style="
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            padding-top: 4px;
-          "
-        >
-          <button
-            type="button"
-            @click="cancel"
-            style="
-              padding: 10px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-              background: #fff;
-              cursor: pointer;
-            "
-          >
-            Cancelar
-          </button>
-
-          <button
-            type="submit"
-            :disabled="opportunityStore.loading || success"
-            :style="{
-              padding: '10px 12px',
-              border: '1px solid #111827',
-              borderRadius: '10px',
-              background: '#111827',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: '700',
-              opacity: opportunityStore.loading || success ? 0.6 : 1,
-            }"
-          >
-            {{ opportunityStore.loading ? "Criando..." : success ? "Criada!" : "Criar vaga" }}
-          </button>
-        </div>
-      </form>
-    </div>
+          <div class="d-flex justify-end gap-2">
+            <v-btn
+              type="button"
+              variant="outlined"
+              @click="cancel"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              type="submit"
+              :loading="opportunityStore.loading"
+              :disabled="success"
+              color="primary"
+              prepend-icon="mdi-plus"
+            >
+              {{ opportunityStore.loading ? "Criando..." : success ? "Criada!" : "Criar vaga" }}
+            </v-btn>
+          </div>
+        </v-form>
+      </v-card-text>
+    </v-card>
   </div>
 </template>

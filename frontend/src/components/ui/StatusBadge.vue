@@ -4,43 +4,55 @@ import { computed } from "vue";
 type Status = "pending" | "accepted" | "rejected" | "completed";
 
 const props = defineProps<{
-    status: Status;
+  status: Status;
 }>();
 
 const label = computed(() => {
-    switch (props.status) {
+  switch (props.status) {
     case "pending":
-        return "Pendente";
+      return "Pendente";
     case "accepted":
-        return "Aceita";
+      return "Aceita";
     case "rejected":
-        return "Recusada";
+      return "Recusada";
     case "completed":
-        return "Concluída";
-    }
+      return "Concluída";
+  }
 });
 
-const badgeStyle = computed(() => {
-    const base = {
-    display: "inline-block",
-    padding: "4px 10px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "600",
-    border: "1px solid #e5e7eb",
-    } as Record<string, string>;
+const icon = computed(() => {
+  switch (props.status) {
+    case "pending":
+      return "mdi-clock";
+    case "accepted":
+      return "mdi-check-circle";
+    case "rejected":
+      return "mdi-close-circle";
+    case "completed":
+      return "mdi-check-all";
+    default:
+      return "";
+  }
+});
 
-    const colors: Record<Status, Record<string, string>> = {
-    pending: { background: "#FEF3C7" },
-    accepted: { background: "#DBEAFE" },
-    rejected: { background: "#FEE2E2" },
-    completed: { background: "#D1FAE5" },
-    };
-
-    return { ...base, ...colors[props.status] };
+const color = computed(() => {
+  switch (props.status) {
+    case "pending":
+      return "warning";
+    case "accepted":
+      return "info";
+    case "rejected":
+      return "error";
+    case "completed":
+      return "success";
+    default:
+      return "grey";
+  }
 });
 </script>
 
 <template>
-    <span :style="badgeStyle">{{ label }}</span>
+  <v-chip :color="color" size="small" :prepend-icon="icon">
+    {{ label }}
+  </v-chip>
 </template>

@@ -120,317 +120,178 @@ onMounted(() => {
 </script>
 
 <template>
-  <div style="max-width: 1100px">
-    <header style="margin-bottom: 20px">
-      <h1 style="font-size: 28px; font-weight: 800">
-        Dashboard da Instituição
-      </h1>
-      <p style="opacity: 0.75">Acompanhe suas vagas e candidaturas.</p>
-    </header>
+  <div>
+    <v-row class="mb-4">
+      <v-col>
+        <h1 class="text-h4">Dashboard da Instituição</h1>
+        <p class="text-body-1 text-medium-emphasis">
+          Acompanhe suas vagas e candidaturas.
+        </p>
+      </v-col>
+    </v-row>
 
     <!-- loading -->
-    <div v-if="loading" style="text-align: center; padding: 40px">
-      <p style="opacity: 0.75">Carregando dados...</p>
-    </div>
+    <v-card v-if="loading" class="text-center pa-8">
+      <v-progress-circular indeterminate color="primary" class="mb-4"></v-progress-circular>
+      <p class="text-medium-emphasis">Carregando dados...</p>
+    </v-card>
 
     <!-- erro -->
-    <div
-      v-if="error"
-      style="
-        padding: 16px;
-        background: #fee;
-        border: 1px solid #fcc;
-        border-radius: 10px;
-        color: #c33;
-        margin-bottom: 20px;
-      "
-    >
+    <v-alert v-if="error" type="error" class="mb-4">
       {{ error }}
-    </div>
+    </v-alert>
 
     <!-- sucesso -->
-    <div
-      v-if="success"
-      style="
-        padding: 16px;
-        background: #dcfce7;
-        border: 1px solid #86efac;
-        border-radius: 10px;
-        color: #166534;
-        margin-bottom: 20px;
-      "
-    >
-      <strong>✓ {{ success }}</strong>
-    </div>
+    <v-alert v-if="success" type="success" class="mb-4" closable @click:close="success = ''">
+      {{ success }}
+    </v-alert>
 
     <!-- formulário de cadastro de perfil -->
-    <div
-      v-if="showProfileForm"
-      style="
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 24px;
-        background: #fff;
-        margin-bottom: 24px;
-      "
-    >
-      <h2 style="font-size: 22px; font-weight: 800; margin: 0 0 8px">
+    <v-card v-if="showProfileForm" class="mb-4" elevation="2">
+      <v-card-title class="text-h5 mb-2">
         Cadastrar Perfil da Instituição
-      </h2>
-      <p style="opacity: 0.75; margin: 0 0 20px">
+      </v-card-title>
+      <v-card-subtitle class="mb-4">
         Complete seu cadastro para começar a publicar oportunidades de voluntariado.
-      </p>
-
-      <form @submit.prevent="saveProfile" style="display: grid; gap: 16px">
-        <div>
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              opacity: 0.75;
-              margin-bottom: 6px;
-            "
-          >
-            Nome da Instituição *
-          </label>
-          <input
+      </v-card-subtitle>
+      <v-card-text>
+        <v-form @submit.prevent="saveProfile">
+          <v-text-field
             v-model="profileForm.name"
-            required
+            label="Nome da Instituição"
+            prepend-inner-icon="mdi-office-building"
             placeholder="Ex: Projeto Semeando Futuro"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-            "
-          />
-        </div>
+            required
+            class="mb-3"
+            variant="outlined"
+          ></v-text-field>
 
-        <div>
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              opacity: 0.75;
-              margin-bottom: 6px;
-            "
-          >
-            Descrição
-          </label>
-          <textarea
+          <v-textarea
             v-model="profileForm.description"
-            rows="4"
+            label="Descrição"
+            prepend-inner-icon="mdi-text"
             placeholder="Descreva sua instituição, missão, objetivos..."
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-              resize: vertical;
-            "
-          />
-        </div>
+            rows="4"
+            class="mb-3"
+            variant="outlined"
+          ></v-textarea>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
-          <div>
-            <label
-              style="
-                display: block;
-                font-size: 13px;
-                opacity: 0.75;
-                margin-bottom: 6px;
-              "
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="profileForm.city"
+                label="Cidade"
+                prepend-inner-icon="mdi-map-marker"
+                placeholder="Ex: Quixadá"
+                variant="outlined"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="profileForm.address"
+                label="Endereço"
+                prepend-inner-icon="mdi-home"
+                placeholder="Ex: Rua Exemplo, 123"
+                variant="outlined"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <div class="d-flex justify-end mt-4">
+            <v-btn
+              type="submit"
+              :loading="saving"
+              color="primary"
+              size="large"
+              prepend-icon="mdi-content-save"
             >
-              Cidade
-            </label>
-            <input
-              v-model="profileForm.city"
-              placeholder="Ex: Quixadá"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-              "
-            />
+              {{ saving ? "Salvando..." : "Cadastrar Perfil" }}
+            </v-btn>
           </div>
-
-          <div>
-            <label
-              style="
-                display: block;
-                font-size: 13px;
-                opacity: 0.75;
-                margin-bottom: 6px;
-              "
-            >
-              Endereço
-            </label>
-            <input
-              v-model="profileForm.address"
-              placeholder="Ex: Rua Exemplo, 123"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-              "
-            />
-          </div>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; padding-top: 4px">
-          <button
-            type="submit"
-            :disabled="saving"
-            :style="{
-              padding: '12px 16px',
-              border: '1px solid #111827',
-              borderRadius: '10px',
-              background: '#111827',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: '700',
-              opacity: saving ? 0.6 : 1,
-            }"
-          >
-            {{ saving ? "Salvando..." : "Cadastrar Perfil" }}
-          </button>
-        </div>
-      </form>
-    </div>
+        </v-form>
+      </v-card-text>
+    </v-card>
 
     <!-- conteúdo -->
     <template v-else-if="hasProfile">
-      <div
-        style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-          margin-bottom: 22px;
-        "
-      >
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <strong>Vagas ativas</strong>
-          <div style="font-size: 28px; font-weight: 800; margin-top: 6px">
-            {{ stats.activeOpportunities }}
-          </div>
-        </div>
+      <v-row class="mb-4">
+        <v-col cols="12" sm="4">
+          <v-card elevation="2">
+            <v-card-text>
+              <div class="text-caption text-medium-emphasis mb-2">Vagas ativas</div>
+              <div class="text-h4 font-weight-bold">{{ stats.activeOpportunities }}</div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" sm="4">
+          <v-card elevation="2">
+            <v-card-text>
+              <div class="text-caption text-medium-emphasis mb-2">
+                Total de candidaturas
+              </div>
+              <div class="text-h4 font-weight-bold">{{ stats.totalApplications }}</div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" sm="4">
+          <v-card elevation="2" color="warning" variant="tonal">
+            <v-card-text>
+              <div class="text-caption text-medium-emphasis mb-2">Pendentes</div>
+              <div class="text-h4 font-weight-bold">{{ stats.pendingApplications }}</div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <strong>Total de candidaturas</strong>
-          <div style="font-size: 28px; font-weight: 800; margin-top: 6px">
-            {{ stats.totalApplications }}
-          </div>
-        </div>
+      <v-row class="mb-4">
+        <v-col cols="12" sm="6">
+          <v-btn
+            to="/app/institution/vagas/nova"
+            block
+            color="primary"
+            size="large"
+            prepend-icon="mdi-plus"
+          >
+            Criar nova vaga
+          </v-btn>
+        </v-col>
+        <v-col cols="12" sm="6">
+          <v-btn
+            to="/app/institution/vagas"
+            block
+            variant="outlined"
+            size="large"
+            prepend-icon="mdi-briefcase"
+          >
+            Minhas vagas
+          </v-btn>
+        </v-col>
+      </v-row>
 
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <strong>Pendentes</strong>
-          <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: #f59e0b">
-            {{ stats.pendingApplications }}
-          </div>
-        </div>
-      </div>
-
-    <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap">
-      <RouterLink
-        to="/app/institution/vagas/nova"
-        style="
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-          text-decoration: none;
-          font-weight: 700;
-        "
-      >
-        ➕ Criar nova vaga
-      </RouterLink>
-
-      <RouterLink
-        to="/app/institution/vagas"
-        style="
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-          text-decoration: none;
-          font-weight: 700;
-        "
-      >
-        📋 Minhas vagas
-      </RouterLink>
-    </div>
-
-      <section>
-        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px">
-          Últimas vagas
-        </h2>
-
-        <div v-if="opportunities.length === 0" style="opacity: 0.75; padding: 20px">
-          Nenhuma vaga criada ainda.
-        </div>
-
-        <div
-          v-else
-          style="
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #fff;
-          "
-        >
-          <div
+      <v-card elevation="2">
+        <v-card-title class="text-h6">Últimas vagas</v-card-title>
+        <v-card-text v-if="opportunities.length === 0" class="text-center pa-8">
+          <p class="text-medium-emphasis">Nenhuma vaga criada ainda.</p>
+        </v-card-text>
+        <v-list v-else>
+          <v-list-item
             v-for="opp in opportunities.slice(0, 5)"
             :key="opp.id"
-            style="
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              padding: 14px;
-              border-top: 1px solid #e5e7eb;
-            "
+            :title="opp.title"
+            :subtitle="`${opp.category || 'Sem categoria'} • ${opp.workloadHours}h`"
           >
-            <div>
-              <strong>{{ opp.title }}</strong>
-              <div style="font-size: 13px; opacity: 0.7">
-                {{ opp.category || "Sem categoria" }} • {{ opp.workloadHours }}h
-              </div>
-            </div>
-
-            <RouterLink
-              :to="`/app/institution/vagas/${String(opp.id)}`"
-              style="
-                padding: 8px 12px;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-                text-decoration: none;
-              "
-            >
-              Gerenciar
-            </RouterLink>
-          </div>
-        </div>
-      </section>
+            <template v-slot:append>
+              <v-btn
+                :to="`/app/institution/vagas/${String(opp.id)}`"
+                variant="text"
+                prepend-icon="mdi-cog"
+              >
+                Gerenciar
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card>
     </template>
   </div>
 </template>

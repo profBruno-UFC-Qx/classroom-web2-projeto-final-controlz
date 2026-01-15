@@ -24,9 +24,11 @@ import InstitutionDashboard from "../pages/institution/InstitutionDashboard.vue"
 import InstitutionOpportunities from "../pages/institution/InstitutionOpportunities.vue";
 import InstitutionOpportunityCreate from "../pages/institution/InstitutionOpportunityCreate.vue";
 import InstitutionOpportunityManage from "../pages/institution/InstitutionOpportunityManage.vue";
+import InstitutionProfile from "../pages/institution/InstitutionProfile.vue";
 
 // Admin pages
 import AdminDashboard from "../pages/admin/AdminDashboard.vue";
+import AdminProfile from "../pages/admin/AdminProfile.vue";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -117,6 +119,11 @@ const routes: RouteRecordRaw[] = [
             name: "institution_opportunity_manage",
             component: InstitutionOpportunityManage,
           },
+          {
+            path: "perfil",
+            name: "institution_profile",
+            component: InstitutionProfile,
+          },
         ],
       },
 
@@ -129,6 +136,11 @@ const routes: RouteRecordRaw[] = [
             path: "dashboard",
             name: "admin_dashboard",
             component: AdminDashboard,
+          },
+          {
+            path: "perfil",
+            name: "admin_profile",
+            component: AdminProfile,
           },
         ],
       },

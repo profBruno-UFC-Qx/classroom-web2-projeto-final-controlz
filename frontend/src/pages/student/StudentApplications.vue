@@ -46,8 +46,7 @@ async function loadApplications() {
     const applicationsWithOpps = await Promise.all(
       result.data.map(async (app) => {
         try {
-          await opportunityStore.getById(app.opportunityId);
-          const opp = opportunityStore.currentOpportunity;
+          const opp = await opportunityStore.getById(app.opportunityId);
           return {
             ...app,
             opportunityData: opp

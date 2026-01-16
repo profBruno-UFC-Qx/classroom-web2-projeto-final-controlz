@@ -3,49 +3,70 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import StatusBadge from "../ui/StatusBadge.vue";
 
+// Tipo que representa uma oportunidade de voluntariado
 export type Opportunity = {
-    id: number | string;
-    title: string;
-    institutionName: string;
-    city: string;
-    category: string;
-    workloadHours: number;
-    skills: string[];
-    shortDescription: string;
-    status: "pending" | "accepted" | "rejected" | "completed";
+  id: number | string;
+  title: string;
+  institutionName: string;
+  city: string;
+  category: string;
+  workloadHours: number;
+  skills: string[];
+  shortDescription: string;
+  status: "pending" | "accepted" | "rejected" | "completed";
 };
 
+// Props do componente: recebe uma oportunidade para exibir
 const props = defineProps<{
-    opportunity: Opportunity;
+  opportunity: Opportunity;
 }>();
 
 const route = useRoute();
 
-// Verifica se está na rota protegida do aluno
+// Verifica se esta na rota protegida do aluno para ajustar links
 const isStudentRoute = computed(() => route.path.startsWith("/app/student"));
-const opportunityLink = computed(() => 
-  isStudentRoute.value 
-    ? `/app/student/oportunidades/${props.opportunity.id}` 
+// Gera link correto baseado no contexto (publico ou privado)
+const opportunityLink = computed(() =>
+  isStudentRoute.value
+    ? `/app/student/oportunidades/${props.opportunity.id}`
     : `/oportunidades/${props.opportunity.id}`
 );
 </script>
 
 <template>
-  <v-card class="mb-4 h-100 d-flex flex-column" elevation="2" style="overflow: hidden;">
+  <v-card
+    class="mb-4 h-100 d-flex flex-column"
+    elevation="2"
+    style="overflow: hidden"
+  >
     <v-card-title class="pa-4 pb-2">
       <div class="w-100">
-        <div class="text-h6 mb-2" :title="opportunity.title" style="word-break: break-word; line-height: 1.4; hyphens: auto;">
+        <div
+          class="text-h6 mb-2"
+          :title="opportunity.title"
+          style="word-break: break-word; line-height: 1.4; hyphens: auto"
+        >
           {{ opportunity.title }}
         </div>
-        <div class="d-flex justify-space-between align-items-center flex-wrap" style="gap: 8px;">
-          <div class="text-caption text-medium-emphasis d-flex flex-wrap align-center" style="gap: 8px;">
+        <div
+          class="d-flex justify-space-between align-items-center flex-wrap"
+          style="gap: 8px"
+        >
+          <div
+            class="text-caption text-medium-emphasis d-flex flex-wrap align-center"
+            style="gap: 8px"
+          >
             <span class="d-flex align-center">
               <v-icon size="small" class="mr-1">mdi-office-building</v-icon>
-              <span class="text-truncate" style="max-width: 120px;">{{ opportunity.institutionName }}</span>
+              <span class="text-truncate" style="max-width: 120px">{{
+                opportunity.institutionName
+              }}</span>
             </span>
             <span class="d-flex align-center">
               <v-icon size="small" class="mr-1">mdi-map-marker</v-icon>
-              <span class="text-truncate" style="max-width: 100px;">{{ opportunity.city }}</span>
+              <span class="text-truncate" style="max-width: 100px">{{
+                opportunity.city
+              }}</span>
             </span>
           </div>
           <div class="text-right">
@@ -75,12 +96,23 @@ const opportunityLink = computed(() =>
         </v-chip>
       </div>
 
-      <p class="text-body-2 mb-0" style="word-break: break-word; overflow-wrap: break-word; line-height: 1.5; hyphens: auto;">
+      <p
+        class="text-body-2 mb-0"
+        style="
+          word-break: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.5;
+          hyphens: auto;
+        "
+      >
         {{ opportunity.shortDescription }}
       </p>
     </v-card-text>
 
-    <v-card-actions class="pa-4 pt-2 d-flex justify-space-between flex-wrap" style="gap: 8px;">
+    <v-card-actions
+      class="pa-4 pt-2 d-flex justify-space-between flex-wrap"
+      style="gap: 8px"
+    >
       <StatusBadge :status="opportunity.status" />
       <v-btn
         :to="opportunityLink"

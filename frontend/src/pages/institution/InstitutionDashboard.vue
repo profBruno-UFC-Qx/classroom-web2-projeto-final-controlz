@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { useOpportunityStore } from "../../stores/opportunity.store";
 import { useApplicationStore } from "../../stores/application.store";
 import { useInstitutionStore } from "../../stores/institution.store";
+import { useOpportunityStore } from "../../stores/opportunity.store";
 
+// Stores necessarias para oportunidades, candidaturas e perfil da instituicao
 const opportunityStore = useOpportunityStore();
 const applicationStore = useApplicationStore();
 const institutionStore = useInstitutionStore();
 
+// Estados de controle da pagina
 const loading = ref(true);
 const saving = ref(false);
 const error = ref("");
 const success = ref("");
 
+// Estatisticas do dashboard
 const stats = ref({
   activeOpportunities: 0,
   totalApplications: 0,
@@ -23,6 +26,7 @@ const opportunities = ref<any[]>([]);
 const hasProfile = ref(false);
 const showProfileForm = ref(false);
 
+// Formulario de cadastro/edicao de perfil
 const profileForm = reactive({
   name: "",
   description: "",
@@ -30,6 +34,7 @@ const profileForm = reactive({
   city: "",
 });
 
+// Carrega dados da instituicao, oportunidades e candidaturas
 async function loadData() {
   loading.value = true;
   error.value = "";
@@ -37,7 +42,7 @@ async function loadData() {
   try {
     // carregar dados da instituição para obter o id
     const institution = await institutionStore.getMe();
-    
+
     // se não tiver perfil (null ou undefined), mostra formulário
     if (!institution || !institutionStore.currentInstitution) {
       hasProfile.value = false;
@@ -48,7 +53,7 @@ async function loadData() {
 
     hasProfile.value = true;
     showProfileForm.value = false;
-    
+
     // preencher formulário se já tiver perfil
     profileForm.name = institution.name;
     profileForm.description = institution.description || "";
@@ -56,28 +61,35 @@ async function loadData() {
     profileForm.city = institution.city || "";
 
     // carregar oportunidades da instituição usando o institutionId
-    const oppResult = await opportunityStore.list({ 
+    const oppResult = await opportunityStore.list({
       institutionId: institution.id,
-      limit: 100 
+      limit: 100,
     });
-    
+
     // filtrar so as oportunidades ativas
     opportunities.value = oppResult.data.filter((o) => o.isActive);
     stats.value.activeOpportunities = opportunities.value.length;
 
     // carregar candidaturas
-    const appResult = await applicationStore.listInstitutionApplications({ limit: 100 });
+    const appResult = await applicationStore.listInstitutionApplications({
+      limit: 100,
+    });
     stats.value.totalApplications = appResult.data.length;
     stats.value.pendingApplications = appResult.data.filter(
       (a) => a.status === "pending"
     ).length;
   } catch (err: any) {
-    error.value = institutionStore.error || applicationStore.error || opportunityStore.error || "Erro ao carregar dados";
+    error.value =
+      institutionStore.error ||
+      applicationStore.error ||
+      opportunityStore.error ||
+      "Erro ao carregar dados";
   } finally {
     loading.value = false;
   }
 }
 
+// Salva ou atualiza perfil da instituicao
 async function saveProfile() {
   saving.value = true;
   error.value = "";
@@ -97,13 +109,14 @@ async function saveProfile() {
       city: profileForm.city.trim() || null,
     });
 
-    success.value = "Perfil cadastrado com sucesso! Aguarde a aprovação do administrador.";
+    success.value =
+      "Perfil cadastrado com sucesso! Aguarde a aprovação do administrador.";
     hasProfile.value = true;
     showProfileForm.value = false;
-    
+
     // recarrega os dados
     await loadData();
-    
+
     setTimeout(() => {
       success.value = "";
     }, 5000);
@@ -114,13 +127,16 @@ async function saveProfile() {
   }
 }
 
+// Carrega dados ao montar o componente
 onMounted(() => {
   loadData();
 });
 </script>
 
 <template>
+  <!-- Dashboard privado da instituicao -->
   <div>
+    <!-- Cabecalho da pagina -->
     <v-row class="mb-4">
       <v-col>
         <h1 class="text-h4">Dashboard da Instituição</h1>
@@ -130,29 +146,40 @@ onMounted(() => {
       </v-col>
     </v-row>
 
-    <!-- loading -->
+    <!-- Estado de carregamento -->
     <v-card v-if="loading" class="text-center pa-8">
-      <v-progress-circular indeterminate color="primary" class="mb-4"></v-progress-circular>
+      <v-progress-circular
+        indeterminate
+        color="primary"
+        class="mb-4"
+      ></v-progress-circular>
       <p class="text-medium-emphasis">Carregando dados...</p>
     </v-card>
 
-    <!-- erro -->
+    <!-- Mensagem de erro -->
     <v-alert v-if="error" type="error" class="mb-4">
       {{ error }}
     </v-alert>
 
-    <!-- sucesso -->
-    <v-alert v-if="success" type="success" class="mb-4" closable @click:close="success = ''">
+    <!-- Mensagem de sucesso -->
+    <v-alert
+      v-if="success"
+      type="success"
+      class="mb-4"
+      closable
+      @click:close="success = ''"
+    >
       {{ success }}
     </v-alert>
 
-    <!-- formulário de cadastro de perfil -->
+    <!-- Formulario de cadastro inicial de perfil (se nao existir) -->
     <v-card v-if="showProfileForm" class="mb-4" elevation="2">
       <v-card-title class="text-h5 mb-2">
         Cadastrar Perfil da Instituição
       </v-card-title>
       <v-card-subtitle class="mb-4">
-        Complete seu cadastro para começar a publicar oportunidades de voluntariado.
+        Complete seu cadastro para começar a publicar oportunidades de
+        voluntariado.
       </v-card-subtitle>
       <v-card-text>
         <v-form @submit.prevent="saveProfile">
@@ -212,14 +239,19 @@ onMounted(() => {
       </v-card-text>
     </v-card>
 
-    <!-- conteúdo -->
+    <!-- Conteudo principal do dashboard (se perfil ja existe) -->
     <template v-else-if="hasProfile">
+      <!-- Cards de estatisticas -->
       <v-row class="mb-4">
         <v-col cols="12" sm="4">
           <v-card elevation="2">
             <v-card-text>
-              <div class="text-caption text-medium-emphasis mb-2">Vagas ativas</div>
-              <div class="text-h4 font-weight-bold">{{ stats.activeOpportunities }}</div>
+              <div class="text-caption text-medium-emphasis mb-2">
+                Vagas ativas
+              </div>
+              <div class="text-h4 font-weight-bold">
+                {{ stats.activeOpportunities }}
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -229,20 +261,27 @@ onMounted(() => {
               <div class="text-caption text-medium-emphasis mb-2">
                 Total de candidaturas
               </div>
-              <div class="text-h4 font-weight-bold">{{ stats.totalApplications }}</div>
+              <div class="text-h4 font-weight-bold">
+                {{ stats.totalApplications }}
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
         <v-col cols="12" sm="4">
           <v-card elevation="2" color="warning" variant="tonal">
             <v-card-text>
-              <div class="text-caption text-medium-emphasis mb-2">Pendentes</div>
-              <div class="text-h4 font-weight-bold">{{ stats.pendingApplications }}</div>
+              <div class="text-caption text-medium-emphasis mb-2">
+                Pendentes
+              </div>
+              <div class="text-h4 font-weight-bold">
+                {{ stats.pendingApplications }}
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
 
+      <!-- Botoes de acao rapida -->
       <v-row class="mb-4">
         <v-col cols="12" sm="6">
           <v-btn
@@ -268,6 +307,7 @@ onMounted(() => {
         </v-col>
       </v-row>
 
+      <!-- Lista das ultimas vagas criadas -->
       <v-card elevation="2">
         <v-card-title class="text-h6">Últimas vagas</v-card-title>
         <v-card-text v-if="opportunities.length === 0" class="text-center pa-8">
@@ -278,7 +318,9 @@ onMounted(() => {
             v-for="opp in opportunities.slice(0, 5)"
             :key="opp.id"
             :title="opp.title"
-            :subtitle="`${opp.category || 'Sem categoria'} • ${opp.workloadHours}h`"
+            :subtitle="`${opp.category || 'Sem categoria'} • ${
+              opp.workloadHours
+            }h`"
           >
             <template v-slot:append>
               <v-btn

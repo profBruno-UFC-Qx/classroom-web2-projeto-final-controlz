@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+// Tipos validos de status para o badge
 type Status = "pending" | "accepted" | "rejected" | "completed";
 
+// Props do componente: recebe o status a ser exibido
 const props = defineProps<{
   status: Status;
 }>();
 
+// Retorna texto traduzido para o status
 const label = computed(() => {
   switch (props.status) {
     case "pending":
@@ -20,6 +23,7 @@ const label = computed(() => {
   }
 });
 
+// Retorna icone adequado para cada status
 const icon = computed(() => {
   switch (props.status) {
     case "pending":
@@ -35,6 +39,7 @@ const icon = computed(() => {
   }
 });
 
+// Retorna cor tematica para cada status
 const color = computed(() => {
   switch (props.status) {
     case "pending":

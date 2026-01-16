@@ -1,7 +1,8 @@
-import { AppDataSource } from "./data-source";
 import { createApp } from "./app";
 import { config } from "./config";
+import { AppDataSource } from "./data-source";
 
+// Bootstrap da API: conecta ao banco e sobe o servidor HTTP
 async function main() {
   await AppDataSource.initialize();
 
@@ -17,5 +18,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
-

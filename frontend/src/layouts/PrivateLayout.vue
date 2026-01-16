@@ -3,19 +3,23 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.store";
 
+// Store de autenticacao, roteador e rota atual
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
+// Faz logout e redireciona para pagina de login
 function logout() {
   auth.logout();
   router.push("/login");
 }
 
+// Verifica se a rota atual corresponde ao caminho fornecido
 const isActive = (path: string) => {
   return route.path.startsWith(path);
 };
 
+// Gera itens do menu baseado no papel do usuario autenticado
 const menuItems = computed(() => {
   if (auth.role === "aluno") {
     return [
@@ -92,8 +96,11 @@ const menuItems = computed(() => {
 </script>
 
 <template>
+  <!-- Layout privado com navegacao lateral e barra superior -->
   <div class="d-flex" style="min-height: 100vh">
+    <!-- Drawer de navegacao permanente com menu baseado no papel -->
     <v-navigation-drawer permanent>
+      <!-- Cabecalho do drawer -->
       <v-list-item
         prepend-icon="mdi-view-dashboard"
         title="Painel"
@@ -102,15 +109,23 @@ const menuItems = computed(() => {
 
       <v-divider></v-divider>
 
+      <!-- Informacoes do usuario autenticado -->
       <v-list-item
         v-if="auth.user"
-        :prepend-icon="auth.role === 'aluno' ? 'mdi-school' : auth.role === 'instituicao' ? 'mdi-office-building' : 'mdi-shield-account'"
+        :prepend-icon="
+          auth.role === 'aluno'
+            ? 'mdi-school'
+            : auth.role === 'instituicao'
+            ? 'mdi-office-building'
+            : 'mdi-shield-account'
+        "
         :title="auth.user.name"
         :subtitle="auth.user.role"
       ></v-list-item>
 
       <v-divider></v-divider>
 
+      <!-- Menu de navegacao dinamico baseado no papel do usuario -->
       <v-list density="compact" nav>
         <v-list-item
           v-for="item in menuItems"
@@ -123,6 +138,7 @@ const menuItems = computed(() => {
         ></v-list-item>
       </v-list>
 
+      <!-- Botao de logout no rodape do drawer -->
       <template v-slot:append>
         <div class="pa-2">
           <v-btn
@@ -137,11 +153,14 @@ const menuItems = computed(() => {
       </template>
     </v-navigation-drawer>
 
+    <!-- Area principal com barra superior e conteudo -->
     <div class="flex-fill d-flex flex-column">
+      <!-- Barra superior com nome da aplicacao -->
       <v-app-bar color="primary" elevation="1">
         <v-app-bar-title>Conecta Voluntário</v-app-bar-title>
       </v-app-bar>
 
+      <!-- Container principal para renderizar rotas filhas -->
       <v-main>
         <v-container fluid>
           <RouterView />

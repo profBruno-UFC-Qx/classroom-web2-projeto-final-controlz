@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useAuthStore } from "../../stores/auth.store";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth.store";
 
+// Store de autenticacao e roteador
 const auth = useAuthStore();
 const router = useRouter();
 
+// Estado do formulario
 const email = ref("");
 const password = ref("");
 const error = ref("");
 
+// Retorna rota do dashboard baseado no papel do usuario
 function getDashboardRoute(role: string) {
   if (role === "aluno") return "/app/student/dashboard";
   if (role === "instituicao") return "/app/institution/dashboard";
@@ -17,6 +20,7 @@ function getDashboardRoute(role: string) {
   return "/";
 }
 
+// Processa login e redireciona para dashboard apropriado
 async function handleSubmit() {
   error.value = "";
   if (!email.value || !password.value) {
@@ -35,6 +39,7 @@ async function handleSubmit() {
 </script>
 
 <template>
+  <!-- Pagina publica de login do sistema -->
   <v-row justify="center">
     <v-col cols="12" sm="8" md="6" lg="4">
       <v-card class="pa-6" elevation="3">
@@ -43,10 +48,18 @@ async function handleSubmit() {
           >Faça login para acessar sua conta</v-card-subtitle
         >
 
-        <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+        <!-- Exibe mensagens de erro -->
+        <v-alert
+          v-if="error"
+          type="error"
+          class="mb-4"
+          closable
+          @click:close="error = ''"
+        >
           {{ error }}
         </v-alert>
 
+        <!-- Formulario de login com email e senha -->
         <v-form @submit.prevent="handleSubmit">
           <v-text-field
             v-model="email"
@@ -84,6 +97,7 @@ async function handleSubmit() {
 
         <v-divider class="my-6"></v-divider>
 
+        <!-- Link para criacao de nova conta -->
         <div class="text-center">
           <p class="text-body-2 text-medium-emphasis mb-3">
             Não tem uma conta?

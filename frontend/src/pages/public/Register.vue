@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useAuthStore } from "../../stores/auth.store";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth.store";
 
+// Store de autenticacao e roteador
 const auth = useAuthStore();
 const router = useRouter();
 
+// Estado do formulario de cadastro
 const name = ref("");
 const email = ref("");
 const password = ref("");
@@ -13,14 +15,21 @@ const confirmPassword = ref("");
 const role = ref<"aluno" | "instituicao">("aluno");
 const error = ref("");
 
+// Retorna rota do dashboard baseado no papel do usuario
 function getDashboardRoute(role: string) {
   if (role === "aluno") return "/app/student/dashboard";
   if (role === "instituicao") return "/app/institution/dashboard";
   return "/";
 }
 
+// Valida campos do formulario antes do envio
 function validateForm() {
-  if (!name.value || !email.value || !password.value || !confirmPassword.value) {
+  if (
+    !name.value ||
+    !email.value ||
+    !password.value ||
+    !confirmPassword.value
+  ) {
     error.value = "Preencha todos os campos";
     return false;
   }
@@ -38,6 +47,7 @@ function validateForm() {
   return true;
 }
 
+// Processa cadastro e redireciona para dashboard apropriado
 async function handleSubmit() {
   error.value = "";
 
@@ -56,6 +66,7 @@ async function handleSubmit() {
 </script>
 
 <template>
+  <!-- Pagina publica de cadastro de novos usuarios -->
   <v-row justify="center">
     <v-col cols="12" sm="8" md="6" lg="5">
       <v-card class="pa-6" elevation="3">
@@ -64,10 +75,18 @@ async function handleSubmit() {
           >Cadastre-se para começar a usar a plataforma</v-card-subtitle
         >
 
-        <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+        <!-- Exibe mensagens de erro de validacao -->
+        <v-alert
+          v-if="error"
+          type="error"
+          class="mb-4"
+          closable
+          @click:close="error = ''"
+        >
           {{ error }}
         </v-alert>
 
+        <!-- Formulario de cadastro com validacao -->
         <v-form @submit.prevent="handleSubmit">
           <v-text-field
             v-model="name"
@@ -90,8 +109,11 @@ async function handleSubmit() {
             variant="outlined"
           ></v-text-field>
 
+          <!-- Seletor de tipo de conta: aluno ou instituicao -->
           <div class="mb-4">
-            <div class="text-body-2 text-medium-emphasis mb-2">Tipo de conta *</div>
+            <div class="text-body-2 text-medium-emphasis mb-2">
+              Tipo de conta *
+            </div>
             <v-btn-toggle v-model="role" mandatory class="w-100">
               <v-btn value="aluno" class="flex-fill">
                 <v-icon start>mdi-school</v-icon>
@@ -140,6 +162,7 @@ async function handleSubmit() {
 
         <v-divider class="my-6"></v-divider>
 
+        <!-- Link para login caso ja tenha conta -->
         <div class="text-center">
           <p class="text-body-2 text-medium-emphasis mb-3">Já tem uma conta?</p>
           <v-btn to="/login" variant="outlined" prepend-icon="mdi-login">

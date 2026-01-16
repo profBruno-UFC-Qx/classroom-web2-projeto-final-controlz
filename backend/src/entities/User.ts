@@ -6,19 +6,22 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { Application } from "./Application";
 import { BaseColumns } from "./BaseColumns";
 import { UserRole } from "./enums";
 import { Institution } from "./Institution";
-import { Application } from "./Application";
 
 @Entity("users")
+// Entidade principal de usuario que compartilha colunas base
 export class User extends BaseColumns {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  // Nome completo do usuario
   @Column({ type: "varchar", length: 120 })
   name!: string;
 
+  // Email unico para login/contato
   @Index({ unique: true })
   @Column({ type: "varchar", length: 180 })
   email!: string;
@@ -27,6 +30,7 @@ export class User extends BaseColumns {
   @Column({ type: "varchar", length: 255 })
   passwordHash!: string;
 
+  // Perfil do usuario: ADMIN, STUDENT ou INSTITUTION
   @Column({ type: "simple-enum", enum: UserRole })
   role!: UserRole;
 
@@ -38,7 +42,3 @@ export class User extends BaseColumns {
   @OneToMany(() => Application, (a) => a.student)
   applications?: Application[];
 }
-
-
-
-

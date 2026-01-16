@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { useOpportunityStore } from "../../stores/opportunity.store";
 import { useInstitutionStore } from "../../stores/institution.store";
+import { useOpportunityStore } from "../../stores/opportunity.store";
 
 const opportunityStore = useOpportunityStore();
 const institutionStore = useInstitutionStore();
@@ -12,12 +12,12 @@ onMounted(async () => {
   try {
     // carregar dados da instituição para obter o id
     const institution = await institutionStore.getMe();
-    
+
     if (institution) {
       // carregar oportunidades da instituição usando o institutionId
-      const result = await opportunityStore.list({ 
+      const result = await opportunityStore.list({
         institutionId: institution.id,
-        limit: 100 
+        limit: 100,
       });
       opportunities.value = result.data;
     }
@@ -38,7 +38,15 @@ function statusLabel(isActive: boolean) {
 <template>
   <div style="max-width: 1100px">
     <header style="margin-bottom: 20px">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        "
+      >
         <div>
           <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 6px">
             Minhas Vagas
@@ -65,7 +73,10 @@ function statusLabel(isActive: boolean) {
     </header>
 
     <!-- loading -->
-    <div v-if="opportunityStore.loading" style="text-align: center; padding: 40px">
+    <div
+      v-if="opportunityStore.loading"
+      style="text-align: center; padding: 40px"
+    >
       <p style="opacity: 0.75">Carregando vagas...</p>
     </div>
 

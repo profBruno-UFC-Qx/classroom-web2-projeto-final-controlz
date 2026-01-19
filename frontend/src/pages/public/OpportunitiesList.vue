@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import OpportunityCard from "../../components/opportunities/OpportunityCard.vue";
 import {
   useOpportunityStore,
@@ -8,10 +8,12 @@ import {
 
 const opportunityStore = useOpportunityStore();
 
-// Estado dos filtros de busca
+// Estado dos filtros de busca (controlados localmente)
 const query = ref("");
 const categoryFilter = ref<string>("");
 const cityFilter = ref<string>("");
+const currentPage = ref(1);
+const itemsPerPage = ref(12);
 
 // Mapeia dados do backend para formato esperado pelo OpportunityCard
 function mapToCardFormat(opp: Opportunity) {
@@ -41,49 +43,64 @@ const items = computed(() => {
   return opportunityStore.opportunities.map(mapToCardFormat);
 });
 
-// Lista filtrada baseada nos criterios de busca
-const filtered = computed(() => {
-  let result = items.value;
+// Paginação da store
+const totalPages = computed(() => opportunityStore.pagination.totalPages);
+const totalItems = computed(() => opportunityStore.pagination.total);
 
-  // Filtro de busca por título
-  const q = query.value.trim().toLowerCase();
-  if (q) {
-    result = result.filter((o) => o.title.toLowerCase().includes(q));
-  }
-
-  // Filtro por categoria
-  if (categoryFilter.value) {
-    result = result.filter((o) => o.category === categoryFilter.value);
-  }
-
-  // Filtro por cidade
-  if (cityFilter.value) {
-    result = result.filter((o) => o.city === cityFilter.value);
-  }
-
-  return result;
-});
-
-// Lista de categorias unicas para popular select de filtro
-const categories = computed(() => {
-  const cats = new Set(items.value.map((o) => o.category));
-  return Array.from(cats).sort();
-});
-
-// Lista de cidades unicas para popular select de filtro
-const cities = computed(() => {
-  const citiesList = new Set(items.value.map((o) => o.city).filter(Boolean));
-  return Array.from(citiesList).sort();
-});
-
-// Carrega oportunidades ativas ao montar o componente
-onMounted(async () => {
+// Função para buscar oportunidades com os filtros atuais
+async function fetchOpportunities() {
   try {
-    await opportunityStore.list({ isActive: true, limit: 50 });
+    await opportunityStore.list({
+      isActive: true,
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      q: query.value.trim() || undefined,
+      category: categoryFilter.value || undefined,
+      city: cityFilter.value || undefined,
+    });
   } catch (err) {
     console.error("Erro ao carregar oportunidades:", err);
   }
+}
+
+// Carrega oportunidades iniciais ao montar o componente
+onMounted(() => {
+  fetchOpportunities();
 });
+
+// Recarrega quando filtros mudam (com debounce no query)
+let debounceTimer: ReturnType<typeof setTimeout>;
+watch([query, categoryFilter, cityFilter], () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    currentPage.value = 1; // Volta para primeira página ao filtrar
+    fetchOpportunities();
+  }, 300); // 300ms de debounce para a busca
+});
+
+// Recarrega quando página muda
+watch(currentPage, () => {
+  fetchOpportunities();
+});
+
+// Listas únicas de categorias e cidades para filtros
+// Como não temos mais todas as oportunidades no frontend,
+// estas listas precisariam vir de endpoints específicos do backend
+// Por ora, vamos manter vazio e permitir digitação livre
+const categories = ref<string[]>([
+  "Educação",
+  "Saúde",
+  "Meio Ambiente",
+  "Assistência Social",
+  "Cultura",
+  "Esporte",
+]);
+const cities = ref<string[]>([
+  "Quixadá",
+  "Fortaleza",
+  "São Paulo",
+  "Rio de Janeiro",
+]);
 </script>
 
 <template>
@@ -159,9 +176,9 @@ onMounted(async () => {
     </v-alert>
 
     <!-- Grid de cards de oportunidades -->
-    <v-row v-else-if="filtered.length > 0" class="ma-0">
+    <v-row v-else-if="items.length > 0" class="ma-0">
       <v-col
-        v-for="o in filtered"
+        v-for="o in items"
         :key="o.id"
         cols="12"
         sm="6"
@@ -170,6 +187,25 @@ onMounted(async () => {
         class="pa-2"
       >
         <OpportunityCard :opportunity="o" />
+      </v-col>
+    </v-row>
+
+    <!-- Paginação -->
+    <v-row v-if="totalPages > 1" class="mt-4">
+      <v-col class="d-flex justify-center">
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+          rounded="circle"
+        ></v-pagination>
+      </v-col>
+    </v-row>
+
+    <!-- Informação de resultados -->
+    <v-row v-if="items.length > 0" class="mt-2">
+      <v-col class="text-center text-caption text-medium-emphasis">
+        Mostrando {{ items.length }} de {{ totalItems }} oportunidades
       </v-col>
     </v-row>
 

@@ -8,6 +8,7 @@ export type OpportunityListQuery = {
   city?: string;
   institutionId?: string;
   isActive?: boolean;
+  q?: string;
 };
 
 export class OpportunityService {
@@ -26,6 +27,7 @@ export class OpportunityService {
     if (query.city) qb.andWhere("o.city = :city", { city: query.city });
     if (query.institutionId)
       qb.andWhere("o.institutionId = :institutionId", { institutionId: query.institutionId });
+    if (query.q) qb.andWhere("o.title LIKE :search", { search: `%${query.q}%` });
 
     qb.orderBy("o.createdAt", "DESC").skip(skip).take(limit);
 

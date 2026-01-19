@@ -21,6 +21,7 @@ export type OpportunityListQuery = {
   city?: string;
   institutionId?: string;
   isActive?: boolean;
+  q?: string;
 };
 
 export type PaginatedResponse<T> = {

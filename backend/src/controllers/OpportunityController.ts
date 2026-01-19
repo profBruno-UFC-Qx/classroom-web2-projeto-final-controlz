@@ -29,6 +29,7 @@ export class OpportunityController {
           ? req.query.institutionId
           : undefined,
       isActive: parseBool(req.query.isActive),
+      q: typeof req.query.q === "string" ? req.query.q : undefined,
     });
 
     return res.json(result);

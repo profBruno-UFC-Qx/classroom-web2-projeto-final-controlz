@@ -25,6 +25,8 @@ const stats = ref({
 const opportunities = ref<any[]>([]);
 const hasProfile = ref(false);
 const showProfileForm = ref(false);
+const institutionStatus = ref<"pending" | "approved" | "rejected" | null>(null);
+const showPendingWarning = ref(false);
 
 // Formulario de cadastro/edicao de perfil
 const profileForm = reactive({
@@ -53,12 +55,31 @@ async function loadData() {
 
     hasProfile.value = true;
     showProfileForm.value = false;
+<<<<<<< HEAD
 
+=======
+    institutionStatus.value = institution.status;
+    
+>>>>>>> b103d3c46f0eafb5dd2b7698edff725987376ff5
     // preencher formulário se já tiver perfil
     profileForm.name = institution.name;
     profileForm.description = institution.description || "";
     profileForm.address = institution.address || "";
     profileForm.city = institution.city || "";
+
+    // verificar se a instituição está aprovada
+    if (institution.status === "pending" || institution.status === "rejected") {
+      showPendingWarning.value = true;
+      // nao tenta carregar candidaturas se nao estiver aprovada
+      stats.value.activeOpportunities = 0;
+      stats.value.totalApplications = 0;
+      stats.value.pendingApplications = 0;
+      opportunities.value = [];
+      loading.value = false;
+      return;
+    }
+
+    showPendingWarning.value = false;
 
     // carregar oportunidades da instituição usando o institutionId
     const oppResult = await opportunityStore.list({
@@ -70,6 +91,7 @@ async function loadData() {
     opportunities.value = oppResult.data.filter((o) => o.isActive);
     stats.value.activeOpportunities = opportunities.value.length;
 
+<<<<<<< HEAD
     // carregar candidaturas
     const appResult = await applicationStore.listInstitutionApplications({
       limit: 100,
@@ -84,6 +106,31 @@ async function loadData() {
       applicationStore.error ||
       opportunityStore.error ||
       "Erro ao carregar dados";
+=======
+    // carregar candidaturas apenas se estiver aprovada
+    try {
+      const appResult = await applicationStore.listInstitutionApplications({ limit: 100 });
+      stats.value.totalApplications = appResult.data.length;
+      stats.value.pendingApplications = appResult.data.filter(
+        (a) => a.status === "pending"
+      ).length;
+    } catch (err: any) {
+      // se der erro 403 (não aprovada), não é um erro crítico, apenas não mostra candidaturas
+      if (err?.response?.status === 403) {
+        stats.value.totalApplications = 0;
+        stats.value.pendingApplications = 0;
+      } else {
+        // outros erros sao tratados no catch geral
+        throw err;
+      }
+    }
+  } catch (err: any) {
+    if (err?.response?.status === 403 && showPendingWarning.value) {
+      // ja tratado acima, nao precisa mostrar erro
+    } else {
+      error.value = institutionStore.error || applicationStore.error || opportunityStore.error || "Erro ao carregar dados";
+    }
+>>>>>>> b103d3c46f0eafb5dd2b7698edff725987376ff5
   } finally {
     loading.value = false;
   }
@@ -172,7 +219,47 @@ onMounted(() => {
       {{ success }}
     </v-alert>
 
+<<<<<<< HEAD
     <!-- Formulario de cadastro inicial de perfil (se nao existir) -->
+=======
+    <!-- aviso de pendência de aprovação -->
+    <v-alert
+      v-if="showPendingWarning && institutionStatus === 'pending'"
+      type="warning"
+      class="mb-4"
+      variant="tonal"
+      prominent
+    >
+      <template v-slot:prepend>
+        <v-icon>mdi-clock-outline</v-icon>
+      </template>
+      <div class="text-h6 mb-2 font-weight-bold">Aguardando Aprovação</div>
+      <div>
+        Seu cadastro está aguardando aprovação do administrador. 
+        Você poderá criar vagas e gerenciar candidaturas assim que seu perfil for aprovado.
+      </div>
+    </v-alert>
+
+    <!-- aviso de rejeição -->
+    <v-alert
+      v-if="showPendingWarning && institutionStatus === 'rejected'"
+      type="error"
+      class="mb-4"
+      variant="tonal"
+      prominent
+    >
+      <template v-slot:prepend>
+        <v-icon>mdi-alert-circle</v-icon>
+      </template>
+      <div class="text-h6 mb-2 font-weight-bold">Cadastro Rejeitado</div>
+      <div>
+        Seu cadastro foi rejeitado pelo administrador. 
+        Entre em contato com a administração para mais informações.
+      </div>
+    </v-alert>
+
+    <!-- formulário de cadastro de perfil -->
+>>>>>>> b103d3c46f0eafb5dd2b7698edff725987376ff5
     <v-card v-if="showProfileForm" class="mb-4" elevation="2">
       <v-card-title class="text-h5 mb-2">
         Cadastrar Perfil da Instituição
@@ -285,7 +372,8 @@ onMounted(() => {
       <v-row class="mb-4">
         <v-col cols="12" sm="6">
           <v-btn
-            to="/app/institution/vagas/nova"
+            :to="institutionStatus === 'approved' ? '/app/institution/vagas/nova' : undefined"
+            :disabled="institutionStatus !== 'approved'"
             block
             color="primary"
             size="large"
@@ -296,7 +384,8 @@ onMounted(() => {
         </v-col>
         <v-col cols="12" sm="6">
           <v-btn
-            to="/app/institution/vagas"
+            :to="institutionStatus === 'approved' ? '/app/institution/vagas' : undefined"
+            :disabled="institutionStatus !== 'approved'"
             block
             variant="outlined"
             size="large"

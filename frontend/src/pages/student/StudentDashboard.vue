@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useApplicationStore } from "../../stores/application.store";
+import StatCard from "../../components/ui/StatCard.vue";
 
 const applicationStore = useApplicationStore();
 
@@ -67,40 +68,31 @@ onMounted(() => {
     <!-- Estatísticas -->
     <v-row v-else class="mb-4">
       <v-col cols="12" sm="6" md="3">
-        <v-card elevation="2">
-          <v-card-text>
-            <div class="text-caption text-medium-emphasis mb-2">
-              Total de candidaturas
-            </div>
-            <div class="text-h4 font-weight-bold">{{ stats.total }}</div>
-          </v-card-text>
-        </v-card>
+        <StatCard title="Total de candidaturas" :value="stats.total" />
       </v-col>
       <v-col cols="12" sm="6" md="3">
-        <v-card elevation="2" color="warning" variant="tonal">
-          <v-card-text>
-            <div class="text-caption text-medium-emphasis mb-2">
-              Pendentes
-            </div>
-            <div class="text-h4 font-weight-bold">{{ stats.pending }}</div>
-          </v-card-text>
-        </v-card>
+        <StatCard
+          title="Pendentes"
+          :value="stats.pending"
+          color="warning"
+          variant="tonal"
+        />
       </v-col>
       <v-col cols="12" sm="6" md="3">
-        <v-card elevation="2" color="success" variant="tonal">
-          <v-card-text>
-            <div class="text-caption text-medium-emphasis mb-2">Aceitas</div>
-            <div class="text-h4 font-weight-bold">{{ stats.accepted }}</div>
-          </v-card-text>
-        </v-card>
+        <StatCard
+          title="Aceitas"
+          :value="stats.accepted"
+          color="success"
+          variant="tonal"
+        />
       </v-col>
       <v-col cols="12" sm="6" md="3">
-        <v-card elevation="2" color="info" variant="tonal">
-          <v-card-text>
-            <div class="text-caption text-medium-emphasis mb-2">Concluídas</div>
-            <div class="text-h4 font-weight-bold">{{ stats.completed }}</div>
-          </v-card-text>
-        </v-card>
+        <StatCard
+          title="Concluídas"
+          :value="stats.completed"
+          color="info"
+          variant="tonal"
+        />
       </v-col>
     </v-row>
 

@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from "vue";
 import { useApplicationStore } from "../../stores/application.store";
 import { useInstitutionStore } from "../../stores/institution.store";
 import { useOpportunityStore } from "../../stores/opportunity.store";
+import StatCard from "../../components/ui/StatCard.vue";
 
 // Stores necessarias para oportunidades, candidaturas e perfil da instituicao
 const opportunityStore = useOpportunityStore();
@@ -55,12 +56,8 @@ async function loadData() {
 
     hasProfile.value = true;
     showProfileForm.value = false;
-<<<<<<< HEAD
-
-=======
     institutionStatus.value = institution.status;
-    
->>>>>>> b103d3c46f0eafb5dd2b7698edff725987376ff5
+
     // preencher formulário se já tiver perfil
     profileForm.name = institution.name;
     profileForm.description = institution.description || "";
@@ -91,22 +88,6 @@ async function loadData() {
     opportunities.value = oppResult.data.filter((o) => o.isActive);
     stats.value.activeOpportunities = opportunities.value.length;
 
-<<<<<<< HEAD
-    // carregar candidaturas
-    const appResult = await applicationStore.listInstitutionApplications({
-      limit: 100,
-    });
-    stats.value.totalApplications = appResult.data.length;
-    stats.value.pendingApplications = appResult.data.filter(
-      (a) => a.status === "pending"
-    ).length;
-  } catch (err: any) {
-    error.value =
-      institutionStore.error ||
-      applicationStore.error ||
-      opportunityStore.error ||
-      "Erro ao carregar dados";
-=======
     // carregar candidaturas apenas se estiver aprovada
     try {
       const appResult = await applicationStore.listInstitutionApplications({ limit: 100 });
@@ -130,7 +111,6 @@ async function loadData() {
     } else {
       error.value = institutionStore.error || applicationStore.error || opportunityStore.error || "Erro ao carregar dados";
     }
->>>>>>> b103d3c46f0eafb5dd2b7698edff725987376ff5
   } finally {
     loading.value = false;
   }
@@ -219,10 +199,6 @@ onMounted(() => {
       {{ success }}
     </v-alert>
 
-<<<<<<< HEAD
-    <!-- Formulario de cadastro inicial de perfil (se nao existir) -->
-=======
-    <!-- aviso de pendência de aprovação -->
     <v-alert
       v-if="showPendingWarning && institutionStatus === 'pending'"
       type="warning"
@@ -235,8 +211,8 @@ onMounted(() => {
       </template>
       <div class="text-h6 mb-2 font-weight-bold">Aguardando Aprovação</div>
       <div>
-        Seu cadastro está aguardando aprovação do administrador. 
-        Você poderá criar vagas e gerenciar candidaturas assim que seu perfil for aprovado.
+        Seu cadastro está aguardando aprovação do administrador. Você poderá
+        criar vagas e gerenciar candidaturas assim que seu perfil for aprovado.
       </div>
     </v-alert>
 
@@ -253,13 +229,12 @@ onMounted(() => {
       </template>
       <div class="text-h6 mb-2 font-weight-bold">Cadastro Rejeitado</div>
       <div>
-        Seu cadastro foi rejeitado pelo administrador. 
-        Entre em contato com a administração para mais informações.
+        Seu cadastro foi rejeitado pelo administrador. Entre em contato com a
+        administração para mais informações.
       </div>
     </v-alert>
 
     <!-- formulário de cadastro de perfil -->
->>>>>>> b103d3c46f0eafb5dd2b7698edff725987376ff5
     <v-card v-if="showProfileForm" class="mb-4" elevation="2">
       <v-card-title class="text-h5 mb-2">
         Cadastrar Perfil da Instituição
@@ -331,40 +306,21 @@ onMounted(() => {
       <!-- Cards de estatisticas -->
       <v-row class="mb-4">
         <v-col cols="12" sm="4">
-          <v-card elevation="2">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis mb-2">
-                Vagas ativas
-              </div>
-              <div class="text-h4 font-weight-bold">
-                {{ stats.activeOpportunities }}
-              </div>
-            </v-card-text>
-          </v-card>
+          <StatCard title="Vagas ativas" :value="stats.activeOpportunities" />
         </v-col>
         <v-col cols="12" sm="4">
-          <v-card elevation="2">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis mb-2">
-                Total de candidaturas
-              </div>
-              <div class="text-h4 font-weight-bold">
-                {{ stats.totalApplications }}
-              </div>
-            </v-card-text>
-          </v-card>
+          <StatCard
+            title="Total de candidaturas"
+            :value="stats.totalApplications"
+          />
         </v-col>
         <v-col cols="12" sm="4">
-          <v-card elevation="2" color="warning" variant="tonal">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis mb-2">
-                Pendentes
-              </div>
-              <div class="text-h4 font-weight-bold">
-                {{ stats.pendingApplications }}
-              </div>
-            </v-card-text>
-          </v-card>
+          <StatCard
+            title="Pendentes"
+            :value="stats.pendingApplications"
+            color="warning"
+            variant="tonal"
+          />
         </v-col>
       </v-row>
 
@@ -372,7 +328,11 @@ onMounted(() => {
       <v-row class="mb-4">
         <v-col cols="12" sm="6">
           <v-btn
-            :to="institutionStatus === 'approved' ? '/app/institution/vagas/nova' : undefined"
+            :to="
+              institutionStatus === 'approved'
+                ? '/app/institution/vagas/nova'
+                : undefined
+            "
             :disabled="institutionStatus !== 'approved'"
             block
             color="primary"
@@ -384,7 +344,11 @@ onMounted(() => {
         </v-col>
         <v-col cols="12" sm="6">
           <v-btn
-            :to="institutionStatus === 'approved' ? '/app/institution/vagas' : undefined"
+            :to="
+              institutionStatus === 'approved'
+                ? '/app/institution/vagas'
+                : undefined
+            "
             :disabled="institutionStatus !== 'approved'"
             block
             variant="outlined"

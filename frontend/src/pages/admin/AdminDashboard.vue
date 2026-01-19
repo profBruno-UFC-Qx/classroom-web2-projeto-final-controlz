@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { useInstitutionStore } from "../../stores/institution.store";
-import { useApplicationStore } from "../../stores/application.store";
-import { useOpportunityStore } from "../../stores/opportunity.store";
+import StatCard from "../../components/ui/StatCard.vue";
 import { http } from "../../services/http";
+import { useApplicationStore } from "../../stores/application.store";
+import { useInstitutionStore } from "../../stores/institution.store";
+import { useOpportunityStore } from "../../stores/opportunity.store";
 
 const institutionStore = useInstitutionStore();
 const applicationStore = useApplicationStore();
@@ -27,21 +28,31 @@ async function loadData() {
   error.value = "";
   try {
     // Carregar instituições pendentes
-    const instResult = await institutionStore.list({ status: "pending", limit: 50 });
+    const instResult = await institutionStore.list({
+      status: "pending",
+      limit: 50,
+    });
     pendingInstitutions.value = instResult.data;
     stats.value.pendingInstitutions = instResult.data.length;
 
     // Carregar todas as instituições para contar aprovadas
-    const allInstResult = await institutionStore.list({ status: "approved", limit: 100 });
+    const allInstResult = await institutionStore.list({
+      status: "approved",
+      limit: 100,
+    });
     stats.value.approvedInstitutions = allInstResult.data.length;
 
     // Carregar candidaturas (admin pode listar todas via GET /applications)
     try {
-      const appResponse = await http.get("/applications", { params: { limit: 1 } });
+      const appResponse = await http.get("/applications", {
+        params: { limit: 1 },
+      });
       stats.value.totalApplications = appResponse.data.meta?.total || 0;
     } catch (err) {
       // Se falhar, tenta com listInstitutionApplications como fallback
-      const appResult = await applicationStore.listInstitutionApplications({ limit: 1 });
+      const appResult = await applicationStore.listInstitutionApplications({
+        limit: 1,
+      });
       stats.value.totalApplications = appResult.meta?.total || 0;
     }
 
@@ -49,7 +60,11 @@ async function loadData() {
     const oppResult = await opportunityStore.list({ limit: 1 });
     stats.value.totalOpportunities = oppResult.meta?.total || 0;
   } catch (err: any) {
-    error.value = institutionStore.error || applicationStore.error || opportunityStore.error || "Erro ao carregar dados";
+    error.value =
+      institutionStore.error ||
+      applicationStore.error ||
+      opportunityStore.error ||
+      "Erro ao carregar dados";
   } finally {
     loading.value = false;
   }
@@ -62,7 +77,9 @@ async function approveInstitution(id: string) {
   try {
     await institutionStore.approve(id);
     // Remove da lista de pendentes
-    pendingInstitutions.value = pendingInstitutions.value.filter((i) => i.id !== id);
+    pendingInstitutions.value = pendingInstitutions.value.filter(
+      (i) => i.id !== id
+    );
     stats.value.pendingInstitutions--;
     stats.value.approvedInstitutions++;
   } catch (err: any) {
@@ -73,13 +90,20 @@ async function approveInstitution(id: string) {
 }
 
 async function rejectInstitution(id: string) {
-  if (!confirm("Deseja rejeitar esta instituição? Esta ação não pode ser desfeita.")) return;
+  if (
+    !confirm(
+      "Deseja rejeitar esta instituição? Esta ação não pode ser desfeita."
+    )
+  )
+    return;
 
   processingId.value = id;
   try {
     await institutionStore.reject(id);
     // Remove da lista de pendentes
-    pendingInstitutions.value = pendingInstitutions.value.filter((i) => i.id !== id);
+    pendingInstitutions.value = pendingInstitutions.value.filter(
+      (i) => i.id !== id
+    );
     stats.value.pendingInstitutions--;
   } catch (err: any) {
     alert(institutionStore.error || "Erro ao rejeitar instituição");
@@ -131,78 +155,36 @@ onMounted(() => {
     <!-- Conteúdo -->
     <template v-else>
       <!-- Estatísticas -->
-      <div
-        style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        "
-      >
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <div style="font-size: 13px; opacity: 0.75; margin-bottom: 6px">
-            Instituições pendentes
-          </div>
-          <div style="font-size: 32px; font-weight: 800; color: #f59e0b">
-            {{ stats.pendingInstitutions }}
-          </div>
-        </div>
-
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <div style="font-size: 13px; opacity: 0.75; margin-bottom: 6px">
-            Instituições aprovadas
-          </div>
-          <div style="font-size: 32px; font-weight: 800; color: #10b981">
-            {{ stats.approvedInstitutions }}
-          </div>
-        </div>
-
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <div style="font-size: 13px; opacity: 0.75; margin-bottom: 6px">
-            Total de candidaturas
-          </div>
-          <div style="font-size: 32px; font-weight: 800; color: #111827">
-            {{ stats.totalApplications }}
-          </div>
-        </div>
-
-        <div
-          style="
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-          "
-        >
-          <div style="font-size: 13px; opacity: 0.75; margin-bottom: 6px">
-            Total de oportunidades
-          </div>
-          <div style="font-size: 32px; font-weight: 800; color: #111827">
-            {{ stats.totalOpportunities }}
-          </div>
-        </div>
-      </div>
+      <v-row class="mb-4">
+        <v-col cols="12" sm="6" md="3">
+          <StatCard
+            title="Instituições pendentes"
+            :value="stats.pendingInstitutions"
+            color="warning"
+            variant="tonal"
+          />
+        </v-col>
+        <v-col cols="12" sm="6" md="3">
+          <StatCard
+            title="Instituições aprovadas"
+            :value="stats.approvedInstitutions"
+            color="success"
+            variant="tonal"
+          />
+        </v-col>
+        <v-col cols="12" sm="6" md="3">
+          <StatCard
+            title="Total de candidaturas"
+            :value="stats.totalApplications"
+          />
+        </v-col>
+        <v-col cols="12" sm="6" md="3">
+          <StatCard
+            title="Total de oportunidades"
+            :value="stats.totalOpportunities"
+          />
+        </v-col>
+      </v-row>
 
       <!-- Instituições pendentes -->
       <section style="margin-bottom: 24px">
@@ -210,7 +192,10 @@ onMounted(() => {
           Instituições Pendentes de Aprovação
         </h2>
 
-        <div v-if="pendingInstitutions.length === 0" style="opacity: 0.75; padding: 20px; text-align: center">
+        <div
+          v-if="pendingInstitutions.length === 0"
+          style="opacity: 0.75; padding: 20px; text-align: center"
+        >
           Nenhuma instituição pendente no momento.
         </div>
 
@@ -235,15 +220,24 @@ onMounted(() => {
             "
           >
             <div style="flex: 1">
-              <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px">
+              <div
+                style="font-weight: 700; font-size: 16px; margin-bottom: 4px"
+              >
                 {{ inst.name }}
               </div>
               <div style="font-size: 13px; opacity: 0.7; margin-bottom: 4px">
                 {{ inst.city || "Cidade não informada" }}
                 <span v-if="inst.address"> • {{ inst.address }}</span>
               </div>
-              <div v-if="inst.description" style="font-size: 13px; opacity: 0.7; margin-top: 4px">
-                {{ inst.description.length > 100 ? inst.description.substring(0, 100) + "..." : inst.description }}
+              <div
+                v-if="inst.description"
+                style="font-size: 13px; opacity: 0.7; margin-top: 4px"
+              >
+                {{
+                  inst.description.length > 100
+                    ? inst.description.substring(0, 100) + "..."
+                    : inst.description
+                }}
               </div>
               <div style="font-size: 12px; opacity: 0.6; margin-top: 4px">
                 Cadastrada em: {{ formatDate(inst.createdAt) }}

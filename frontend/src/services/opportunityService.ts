@@ -69,9 +69,7 @@ export async function getOpportunityById(id: string): Promise<Opportunity> {
     return res.data.opportunity;
   } catch (err: any) {
     const status = err?.response?.status;
-    if (status !== 404) {
-        throw err;
-    }
+    if (status !== 404) throw err;
   }
 
   const MAX_PAGES_TO_SCAN = 10;

@@ -15,12 +15,12 @@ export class OpportunityController {
 
   // Lista oportunidades com filtros opcionais e paginacao (acesso publico)
   listPublic = async (req: Request, res: Response) => {
-    const page = req.query.page ? Number(req.query.page) : undefined;
-    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const pageRaw = req.query.page ? Number(req.query.page) : undefined;
+    const limitRaw = req.query.limit ? Number(req.query.limit) : undefined;
 
     const result = await this.service.listPublic({
-      page: Number.isFinite(page) ? page : undefined,
-      limit: Number.isFinite(limit) ? limit : undefined,
+      page: Number.isFinite(pageRaw) ? pageRaw : undefined,
+      limit: Number.isFinite(limitRaw) ? limitRaw : undefined,
       category:
         typeof req.query.category === "string" ? req.query.category : undefined,
       city: typeof req.query.city === "string" ? req.query.city : undefined,

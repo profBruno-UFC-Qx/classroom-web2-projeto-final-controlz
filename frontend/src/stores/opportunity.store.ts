@@ -27,70 +27,63 @@ export type OpportunityListQuery = {
 export type PaginatedResponse<T> = {
   data: T[];
   meta: {
-    page: number;
-    limit: number;
-    total: number;
+    totalItems: number;
     totalPages: number;
+    currentPage: number;
+    limit: number;
   };
 };
 
 export const useOpportunityStore = defineStore("opportunity", {
   state: () => ({
-    opportunities: [] as Opportunity[],
     currentOpportunity: null as Opportunity | null,
     loading: false,
     error: null as string | null,
-    pagination: {
-      page: 1,
-      limit: 10,
-      total: 0,
-      totalPages: 0,
-    },
   }),
 
   actions: {
+    // ✅ Agora apenas busca e RETORNA (não armazena lista completa)
     async list(query: OpportunityListQuery = {}) {
       this.loading = true;
       this.error = null;
+
       try {
-        const response = await http.get<PaginatedResponse<Opportunity>>("/opportunities", {
-          params: query,
-        });
-        this.opportunities = response.data.data;
-        this.pagination = response.data.meta;
+        const response = await http.get<PaginatedResponse<Opportunity>>(
+          "/opportunities",
+          { params: query }
+        );
+
         return response.data;
       } catch (err: any) {
-        this.error = err?.response?.data?.message || "Erro ao carregar oportunidades";
+        this.error =
+          err?.response?.data?.message || "Erro ao carregar oportunidades";
         throw err;
       } finally {
         this.loading = false;
       }
     },
 
+    // Mantive como estava, mas recomendo endpoint GET /opportunities/:id no futuro
     async getById(id: string) {
-      // como não tem um endpoint específico, vamos buscar da lista e filtrar
-      // ou usar a lista atual se já tiver carregado
-      const existing = this.opportunities.find((o) => o.id === id);
-      if (existing) {
-        this.currentOpportunity = existing;
-        return existing;
-      }
+      if (this.currentOpportunity?.id === id) return this.currentOpportunity;
 
-      // se não encontrar, busca na lista
+      // fallback não escalável: tenta achar buscando uma página maior
       this.loading = true;
       this.error = null;
       try {
-        const response = await http.get<PaginatedResponse<Opportunity>>("/opportunities", {
-          params: { limit: 100 }, // buscar mais para encontrar o item
-        });
+        const response = await http.get<PaginatedResponse<Opportunity>>(
+          "/opportunities",
+          { params: { limit: 50, page: 1 } }
+        );
+
         const found = response.data.data.find((o) => o.id === id);
-        if (found) {
-          this.currentOpportunity = found;
-          return found;
-        }
-        throw new Error("Oportunidade não encontrada");
+        if (!found) throw new Error("Oportunidade não encontrada");
+
+        this.currentOpportunity = found;
+        return found;
       } catch (err: any) {
-        this.error = err?.response?.data?.message || "Erro ao carregar oportunidade";
+        this.error =
+          err?.response?.data?.message || "Erro ao carregar oportunidade";
         throw err;
       } finally {
         this.loading = false;
@@ -108,9 +101,10 @@ export const useOpportunityStore = defineStore("opportunity", {
       this.loading = true;
       this.error = null;
       try {
-        const response = await http.post<{ opportunity: Opportunity }>("/opportunities", data);
-        // adiciona na lista se necessário
-        this.opportunities.unshift(response.data.opportunity);
+        const response = await http.post<{ opportunity: Opportunity }>(
+          "/opportunities",
+          data
+        );
         return response.data.opportunity;
       } catch (err: any) {
         this.error = err?.response?.data?.message || "Erro ao criar oportunidade";
@@ -120,29 +114,33 @@ export const useOpportunityStore = defineStore("opportunity", {
       }
     },
 
-    async update(id: string, data: {
-      title?: string;
-      description?: string;
-      category?: string | null;
-      city?: string | null;
-      workloadHours?: number;
-      isActive?: boolean;
-    }) {
+    async update(
+      id: string,
+      data: {
+        title?: string;
+        description?: string;
+        category?: string | null;
+        city?: string | null;
+        workloadHours?: number;
+        isActive?: boolean;
+      }
+    ) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await http.put<{ opportunity: Opportunity }>(`/opportunities/${id}`, data);
-        // atualiza na lista
-        const index = this.opportunities.findIndex((o) => o.id === id);
-        if (index !== -1) {
-          this.opportunities[index] = response.data.opportunity;
-        }
+        const response = await http.put<{ opportunity: Opportunity }>(
+          `/opportunities/${id}`,
+          data
+        );
+
         if (this.currentOpportunity?.id === id) {
           this.currentOpportunity = response.data.opportunity;
         }
+
         return response.data.opportunity;
       } catch (err: any) {
-        this.error = err?.response?.data?.message || "Erro ao atualizar oportunidade";
+        this.error =
+          err?.response?.data?.message || "Erro ao atualizar oportunidade";
         throw err;
       } finally {
         this.loading = false;
@@ -154,8 +152,6 @@ export const useOpportunityStore = defineStore("opportunity", {
       this.error = null;
       try {
         await http.delete(`/opportunities/${id}`);
-        // remove da lista
-        this.opportunities = this.opportunities.filter((o) => o.id !== id);
         if (this.currentOpportunity?.id === id) {
           this.currentOpportunity = null;
         }

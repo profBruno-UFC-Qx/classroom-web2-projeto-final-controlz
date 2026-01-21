@@ -15,9 +15,17 @@ const cityFilter = ref<string>("");
 const currentPage = ref(1);
 const itemsPerPage = ref(12);
 
+// ✅ Agora a lista e a paginação são LOCAIS do componente
+const items = ref<Opportunity[]>([]);
+const meta = ref({
+  totalItems: 0,
+  totalPages: 1,
+  currentPage: 1,
+  limit: itemsPerPage.value,
+});
+
 // Mapeia dados do backend para formato esperado pelo OpportunityCard
 function mapToCardFormat(opp: Opportunity) {
-  // Pegar primeiras 100 caracteres da descrição como shortDescription
   const shortDescription =
     opp.description.length > 100
       ? opp.description.substring(0, 100) + "..."
@@ -39,18 +47,16 @@ function mapToCardFormat(opp: Opportunity) {
 }
 
 // Lista de oportunidades no formato do card
-const items = computed(() => {
-  return opportunityStore.opportunities.map(mapToCardFormat);
-});
+const cardItems = computed(() => items.value.map(mapToCardFormat));
 
-// Paginação da store
-const totalPages = computed(() => opportunityStore.pagination.totalPages);
-const totalItems = computed(() => opportunityStore.pagination.total);
+// Paginação local
+const totalPages = computed(() => meta.value.totalPages);
+const totalItems = computed(() => meta.value.totalItems);
 
 // Função para buscar oportunidades com os filtros atuais
 async function fetchOpportunities() {
   try {
-    await opportunityStore.list({
+    const res = await opportunityStore.list({
       isActive: true,
       page: currentPage.value,
       limit: itemsPerPage.value,
@@ -58,6 +64,9 @@ async function fetchOpportunities() {
       category: categoryFilter.value || undefined,
       city: cityFilter.value || undefined,
     });
+
+    items.value = res.data;
+    meta.value = res.meta;
   } catch (err) {
     console.error("Erro ao carregar oportunidades:", err);
   }
@@ -73,9 +82,9 @@ let debounceTimer: ReturnType<typeof setTimeout>;
 watch([query, categoryFilter, cityFilter], () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    currentPage.value = 1; // Volta para primeira página ao filtrar
+    currentPage.value = 1; // volta para primeira página ao filtrar
     fetchOpportunities();
-  }, 300); // 300ms de debounce para a busca
+  }, 300);
 });
 
 // Recarrega quando página muda
@@ -83,10 +92,7 @@ watch(currentPage, () => {
   fetchOpportunities();
 });
 
-// Listas únicas de categorias e cidades para filtros
-// Como não temos mais todas as oportunidades no frontend,
-// estas listas precisariam vir de endpoints específicos do backend
-// Por ora, vamos manter vazio e permitir digitação livre
+// Listas estáticas (ideal: vir do backend)
 const categories = ref<string[]>([
   "Educação",
   "Saúde",
@@ -104,9 +110,7 @@ const cities = ref<string[]>([
 </script>
 
 <template>
-  <!-- Pagina publica de listagem de oportunidades com filtros -->
   <div style="width: 100%; overflow-x: hidden">
-    <!-- Cabeçalho da pagina -->
     <v-row class="mb-4">
       <v-col>
         <h2 class="text-h4 mb-2">Oportunidades</h2>
@@ -116,7 +120,6 @@ const cities = ref<string[]>([
       </v-col>
     </v-row>
 
-    <!-- Painel de filtros: busca, categoria e cidade -->
     <v-card class="mb-4" elevation="1">
       <v-card-text>
         <v-row>
@@ -128,8 +131,9 @@ const cities = ref<string[]>([
               variant="outlined"
               density="compact"
               hide-details
-            ></v-text-field>
+            />
           </v-col>
+
           <v-col cols="12" md="4">
             <v-select
               v-model="categoryFilter"
@@ -141,8 +145,9 @@ const cities = ref<string[]>([
               variant="outlined"
               density="compact"
               hide-details
-            ></v-select>
+            />
           </v-col>
+
           <v-col cols="12" md="4">
             <v-select
               v-model="cityFilter"
@@ -154,31 +159,24 @@ const cities = ref<string[]>([
               variant="outlined"
               density="compact"
               hide-details
-            ></v-select>
+            />
           </v-col>
         </v-row>
       </v-card-text>
     </v-card>
 
-    <!-- Estado de carregamento -->
     <v-card v-if="opportunityStore.loading" class="text-center pa-8">
-      <v-progress-circular
-        indeterminate
-        color="primary"
-        class="mb-4"
-      ></v-progress-circular>
+      <v-progress-circular indeterminate color="primary" class="mb-4" />
       <p class="text-medium-emphasis">Carregando oportunidades...</p>
     </v-card>
 
-    <!-- Estado de erro -->
     <v-alert v-else-if="opportunityStore.error" type="error" class="mb-4">
       {{ opportunityStore.error }}
     </v-alert>
 
-    <!-- Grid de cards de oportunidades -->
-    <v-row v-else-if="items.length > 0" class="ma-0">
+    <v-row v-else-if="cardItems.length > 0" class="ma-0">
       <v-col
-        v-for="o in items"
+        v-for="o in cardItems"
         :key="o.id"
         cols="12"
         sm="6"
@@ -190,7 +188,6 @@ const cities = ref<string[]>([
       </v-col>
     </v-row>
 
-    <!-- Paginação -->
     <v-row v-if="totalPages > 1" class="mt-4">
       <v-col class="d-flex justify-center">
         <v-pagination
@@ -198,22 +195,20 @@ const cities = ref<string[]>([
           :length="totalPages"
           :total-visible="7"
           rounded="circle"
-        ></v-pagination>
+        />
       </v-col>
     </v-row>
 
-    <!-- Informação de resultados -->
-    <v-row v-if="items.length > 0" class="mt-2">
+    <v-row v-if="cardItems.length > 0" class="mt-2">
       <v-col class="text-center text-caption text-medium-emphasis">
-        Mostrando {{ items.length }} de {{ totalItems }} oportunidades
+        Mostrando {{ cardItems.length }} de {{ totalItems }} oportunidades
       </v-col>
     </v-row>
 
-    <!-- Estado vazio: nenhuma oportunidade encontrada -->
     <v-card v-else class="text-center pa-8">
-      <v-icon size="64" color="grey-lighten-1" class="mb-4"
-        >mdi-information-outline</v-icon
-      >
+      <v-icon size="64" color="grey-lighten-1" class="mb-4">
+        mdi-information-outline
+      </v-icon>
       <p class="text-body-1 text-medium-emphasis">
         Nenhuma oportunidade encontrada com os filtros selecionados.
       </p>

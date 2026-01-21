@@ -26,11 +26,13 @@ export class OpportunityService {
       });
 
     if (query.category) {
-      qb.andWhere("o.category = :category", { category: query.category });
+      qb.andWhere("LOWER(o.category) = LOWER(:category)", {
+        category: query.category,
+      });
     }
 
     if (query.city) {
-      qb.andWhere("o.city = :city", { city: query.city });
+      qb.andWhere("LOWER(o.city) = LOWER(:city)", { city: query.city });
     }
 
     if (query.institutionId) {
@@ -39,7 +41,6 @@ export class OpportunityService {
       });
     }
 
-    // Busca por termo (título OU descrição)
     if (query.q) {
       qb.andWhere("(o.title LIKE :search OR o.description LIKE :search)", {
         search: `%${query.q}%`,

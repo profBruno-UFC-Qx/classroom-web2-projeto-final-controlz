@@ -9,18 +9,16 @@ function parseBool(v: unknown): boolean | undefined {
   return undefined;
 }
 
-// Controller de oportunidades publicas (listagem aberta)
 export class OpportunityController {
   private service = new OpportunityService();
 
-  // Lista oportunidades com filtros opcionais e paginacao (acesso publico)
   listPublic = async (req: Request, res: Response) => {
-    const pageRaw = req.query.page ? Number(req.query.page) : undefined;
-    const limitRaw = req.query.limit ? Number(req.query.limit) : undefined;
+    const page = req.query.page ? Number(req.query.page) : undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
     const result = await this.service.listPublic({
-      page: Number.isFinite(pageRaw) ? pageRaw : undefined,
-      limit: Number.isFinite(limitRaw) ? limitRaw : undefined,
+      page: Number.isFinite(page) ? page : undefined,
+      limit: Number.isFinite(limit) ? limit : undefined,
       category:
         typeof req.query.category === "string" ? req.query.category : undefined,
       city: typeof req.query.city === "string" ? req.query.city : undefined,

@@ -2,20 +2,16 @@
 import { computed, onMounted, ref, watch } from "vue";
 import OpportunityCard from "../../components/opportunities/OpportunityCard.vue";
 import {
-  useOpportunityStore,
+  fetchOpportunities,
   type Opportunity,
-} from "../../stores/opportunity.store";
+} from "../../services/opportunityService";
 
-const opportunityStore = useOpportunityStore();
-
-// Estado dos filtros de busca (controlados localmente)
 const query = ref("");
 const categoryFilter = ref<string>("");
 const cityFilter = ref<string>("");
 const currentPage = ref(1);
 const itemsPerPage = ref(12);
 
-// ✅ Agora a lista e a paginação são LOCAIS do componente
 const items = ref<Opportunity[]>([]);
 const meta = ref({
   totalItems: 0,
@@ -24,7 +20,9 @@ const meta = ref({
   limit: itemsPerPage.value,
 });
 
-// Mapeia dados do backend para formato esperado pelo OpportunityCard
+const loading = ref(false);
+const error = ref<string | null>(null);
+
 function mapToCardFormat(opp: Opportunity) {
   const shortDescription =
     opp.description.length > 100
@@ -34,11 +32,11 @@ function mapToCardFormat(opp: Opportunity) {
   return {
     id: opp.id,
     title: opp.title,
-    institutionName: "Instituição", // TODO: buscar nome da instituição se necessário
+    institutionName: "Instituição",
     city: opp.city || "Não informado",
     category: opp.category || "Geral",
     workloadHours: opp.workloadHours,
-    skills: [], // Backend não retorna skills, pode ser adicionado depois
+    skills: [],
     shortDescription,
     status: opp.isActive
       ? "pending"
@@ -46,53 +44,55 @@ function mapToCardFormat(opp: Opportunity) {
   };
 }
 
-// Lista de oportunidades no formato do card
 const cardItems = computed(() => items.value.map(mapToCardFormat));
-
-// Paginação local
 const totalPages = computed(() => meta.value.totalPages);
 const totalItems = computed(() => meta.value.totalItems);
 
-// Função para buscar oportunidades com os filtros atuais
-async function fetchOpportunities() {
+async function load() {
+  loading.value = true;
+  error.value = null;
+
   try {
-    const res = await opportunityStore.list({
+    const params = {
       isActive: true,
       page: currentPage.value,
       limit: itemsPerPage.value,
       q: query.value.trim() || undefined,
       category: categoryFilter.value || undefined,
       city: cityFilter.value || undefined,
-    });
+    };
+
+    if (cityFilter.value) {
+      console.log("Filtro de cidade:", params.city);
+    }
+
+    const res = await fetchOpportunities(params);
 
     items.value = res.data;
     meta.value = res.meta;
-  } catch (err) {
-    console.error("Erro ao carregar oportunidades:", err);
+  } catch (e: any) {
+    error.value =
+      e?.response?.data?.message || "Erro ao carregar oportunidades";
+  } finally {
+    loading.value = false;
   }
 }
 
-// Carrega oportunidades iniciais ao montar o componente
-onMounted(() => {
-  fetchOpportunities();
-});
+onMounted(load);
 
-// Recarrega quando filtros mudam (com debounce no query)
 let debounceTimer: ReturnType<typeof setTimeout>;
 watch([query, categoryFilter, cityFilter], () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    currentPage.value = 1; // volta para primeira página ao filtrar
-    fetchOpportunities();
+    currentPage.value = 1;
+    load();
   }, 300);
 });
 
-// Recarrega quando página muda
 watch(currentPage, () => {
-  fetchOpportunities();
+  load();
 });
 
-// Listas estáticas (ideal: vir do backend)
 const categories = ref<string[]>([
   "Educação",
   "Saúde",
@@ -102,7 +102,7 @@ const categories = ref<string[]>([
   "Esporte",
 ]);
 const cities = ref<string[]>([
-  "Quixadá",
+  "Quixada",
   "Fortaleza",
   "São Paulo",
   "Rio de Janeiro",
@@ -165,13 +165,13 @@ const cities = ref<string[]>([
       </v-card-text>
     </v-card>
 
-    <v-card v-if="opportunityStore.loading" class="text-center pa-8">
+    <v-card v-if="loading" class="text-center pa-8">
       <v-progress-circular indeterminate color="primary" class="mb-4" />
       <p class="text-medium-emphasis">Carregando oportunidades...</p>
     </v-card>
 
-    <v-alert v-else-if="opportunityStore.error" type="error" class="mb-4">
-      {{ opportunityStore.error }}
+    <v-alert v-else-if="error" type="error" class="mb-4">
+      {{ error }}
     </v-alert>
 
     <v-row v-else-if="cardItems.length > 0" class="ma-0">

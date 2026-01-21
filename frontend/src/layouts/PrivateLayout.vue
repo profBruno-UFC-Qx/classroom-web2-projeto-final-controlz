@@ -1,0 +1,171 @@
+<script setup lang="ts">
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth.store";
+
+// Store de autenticacao, roteador e rota atual
+const auth = useAuthStore();
+const router = useRouter();
+const route = useRoute();
+
+// Faz logout e redireciona para pagina de login
+function logout() {
+  auth.logout();
+  router.push("/login");
+}
+
+// Verifica se a rota atual corresponde ao caminho fornecido
+const isActive = (path: string) => {
+  return route.path.startsWith(path);
+};
+
+// Gera itens do menu baseado no papel do usuario autenticado
+const menuItems = computed(() => {
+  if (auth.role === "aluno") {
+    return [
+      {
+        title: "Dashboard",
+        icon: "mdi-view-dashboard",
+        to: "/app/student/dashboard",
+        path: "/app/student/dashboard",
+      },
+      {
+        title: "Minhas candidaturas",
+        icon: "mdi-file-document",
+        to: "/app/student/candidaturas",
+        path: "/app/student/candidaturas",
+      },
+      {
+        title: "Oportunidades",
+        icon: "mdi-briefcase",
+        to: "/app/student/oportunidades",
+        path: "/app/student/oportunidades",
+      },
+      {
+        title: "Perfil",
+        icon: "mdi-account",
+        to: "/app/student/perfil",
+        path: "/app/student/perfil",
+      },
+    ];
+  } else if (auth.role === "instituicao") {
+    return [
+      {
+        title: "Dashboard",
+        icon: "mdi-view-dashboard",
+        to: "/app/institution/dashboard",
+        path: "/app/institution/dashboard",
+      },
+      {
+        title: "Minhas vagas",
+        icon: "mdi-briefcase",
+        to: "/app/institution/vagas",
+        path: "/app/institution/vagas",
+      },
+      {
+        title: "Criar vaga",
+        icon: "mdi-plus",
+        to: "/app/institution/vagas/nova",
+        path: "/app/institution/vagas/nova",
+      },
+      {
+        title: "Perfil",
+        icon: "mdi-account",
+        to: "/app/institution/perfil",
+        path: "/app/institution/perfil",
+      },
+    ];
+  } else if (auth.role === "admin") {
+    return [
+      {
+        title: "Dashboard",
+        icon: "mdi-view-dashboard",
+        to: "/app/admin/dashboard",
+        path: "/app/admin/dashboard",
+      },
+      {
+        title: "Perfil",
+        icon: "mdi-account",
+        to: "/app/admin/perfil",
+        path: "/app/admin/perfil",
+      },
+    ];
+  }
+  return [];
+});
+</script>
+
+<template>
+  <!-- Layout privado com navegacao lateral e barra superior -->
+  <div class="d-flex" style="min-height: 100vh">
+    <!-- Drawer de navegacao permanente com menu baseado no papel -->
+    <v-navigation-drawer permanent>
+      <!-- Cabecalho do drawer -->
+      <v-list-item
+        prepend-icon="mdi-view-dashboard"
+        title="Painel"
+        class="font-weight-bold"
+      ></v-list-item>
+
+      <v-divider></v-divider>
+
+      <!-- Informacoes do usuario autenticado -->
+      <v-list-item
+        v-if="auth.user"
+        :prepend-icon="
+          auth.role === 'aluno'
+            ? 'mdi-school'
+            : auth.role === 'instituicao'
+            ? 'mdi-office-building'
+            : 'mdi-shield-account'
+        "
+        :title="auth.user.name"
+        :subtitle="auth.user.role"
+      ></v-list-item>
+
+      <v-divider></v-divider>
+
+      <!-- Menu de navegacao dinamico baseado no papel do usuario -->
+      <v-list density="compact" nav>
+        <v-list-item
+          v-for="item in menuItems"
+          :key="item.to"
+          :to="item.to"
+          :prepend-icon="item.icon"
+          :title="item.title"
+          :active="isActive(item.path)"
+          color="primary"
+        ></v-list-item>
+      </v-list>
+
+      <!-- Botao de logout no rodape do drawer -->
+      <template v-slot:append>
+        <div class="pa-2">
+          <v-btn
+            block
+            variant="outlined"
+            prepend-icon="mdi-logout"
+            @click="logout"
+          >
+            Sair
+          </v-btn>
+        </div>
+      </template>
+    </v-navigation-drawer>
+
+    <!-- Area principal com barra superior e conteudo -->
+    <div class="flex-fill d-flex flex-column">
+      <!-- Barra superior com nome da aplicacao -->
+      <v-app-bar color="primary" elevation="1">
+        <v-app-bar-title>Conecta Voluntário</v-app-bar-title>
+      </v-app-bar>
+
+      <!-- Container principal para renderizar rotas filhas -->
+      <v-main>
+        <v-container fluid>
+          <RouterView />
+        </v-container>
+      </v-main>
+    </div>
+  </div>
+</template>
